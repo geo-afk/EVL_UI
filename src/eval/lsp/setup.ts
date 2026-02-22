@@ -1,4 +1,4 @@
-import type * as monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
 import { syntax_definition } from "./syntax";
 import { language_configuration } from "./configuration";
 import { hoverDocs } from "./hover";
@@ -39,7 +39,6 @@ export function setup_eval(monacoInstance: typeof monaco) {
           word.endColumn
         ),
         contents: [
-          // { value: `**${word.word.toUpperCase()}**` },
           { value: docs }
         ]
       };

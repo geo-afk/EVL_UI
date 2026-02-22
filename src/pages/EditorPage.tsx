@@ -10,19 +10,15 @@ import { EVAL_SAMPLE } from "../model/models";
 export const EditorPage = () => {
   const [code, setCode] = useState(EVAL_SAMPLE.defaultCode);
 
-  const handleLanguageChange = () => {
-    setCode(EVAL_SAMPLE.defaultCode);
-  };
+  // const handleLanguageChange = () => {
+  //   setCode(EVAL_SAMPLE.defaultCode);
+  // };
 
   const handleRun = () => {};
-
   const handleAIRun = () => {};
-
   const handleAIInsights = () => {};
   const onClear = () => {};
-  const isAILoading = () => {
-    return true;
-  };
+  const isAILoading = () => true;
 
   const leftPanel = (
     <StackedPanes
@@ -43,7 +39,6 @@ export const EditorPage = () => {
     <CodeEditor
       code={code}
       onCodeChange={setCode}
-      onLanguageChange={handleLanguageChange}
       onRun={handleRun}
       onAIRun={handleAIRun}
       onAIInsights={handleAIInsights}
@@ -52,7 +47,7 @@ export const EditorPage = () => {
   );
 
   return (
-    <Box h="100%" bg="#0e0e12">
+    <Box h="100%" bg="var(--bg-base)">
       <SplitLayout
         left={leftPanel}
         right={rightPanel}

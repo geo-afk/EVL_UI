@@ -77,7 +77,10 @@ const CONSTANTS = ["PI", "DAYS_IN_WEEK", "HOURS_IN_DAY", "YEAR"];
 function tokenizeLine(line: string): React.ReactNode[] {
   if (line.trim().startsWith("//")) {
     return [
-      <span key="comment" style={{ color: "#4a5568", fontStyle: "italic" }}>
+      <span
+        key="comment"
+        style={{ color: "var(--text-ghost)", fontStyle: "italic" }}
+      >
         {line}
       </span>,
     ];
@@ -140,8 +143,8 @@ function EVLCode({ code, label }: { code: string; label?: string }) {
         </Flex>
       )}
       <Box
-        bg="#07070b"
-        border="1px solid #1e1e2e"
+        bg="var(--bg-code)"
+        border="1px solid var(--border)"
         borderRadius="8px"
         overflow="hidden"
       >
@@ -151,8 +154,8 @@ function EVLCode({ code, label }: { code: string; label?: string }) {
           gap="6px"
           px="14px"
           py="8px"
-          bg="#0d0d14"
-          borderBottom="1px solid #1e1e2e"
+          bg="var(--bg-surface)"
+          borderBottom="1px solid var(--border)"
         >
           <Box w="8px" h="8px" borderRadius="50%" bg="#f87171" opacity={0.7} />
           <Box w="8px" h="8px" borderRadius="50%" bg="#fbbf24" opacity={0.7} />
@@ -160,7 +163,7 @@ function EVLCode({ code, label }: { code: string; label?: string }) {
           <Text
             ml="8px"
             fontSize="10px"
-            color="#3a3a4e"
+            color="var(--text-ghost)"
             fontFamily="monospace"
             letterSpacing="0.06em"
           >
@@ -251,7 +254,7 @@ function NoteBox({
           {styles.label}
         </Text>
       </Flex>
-      <Text fontSize="12.5px" color="#8a8a9a" lineHeight="1.7">
+      <Text fontSize="12.5px" color="var(--text-secondary)" lineHeight="1.7">
         {text}
       </Text>
     </Box>
@@ -634,7 +637,7 @@ function SectionBlock({ section }: { section: Section }) {
 
   return (
     <Box
-      border="1px solid #1e1e2e"
+      border="1px solid var(--border)"
       borderRadius="10px"
       overflow="hidden"
       mb="12px"
@@ -644,27 +647,27 @@ function SectionBlock({ section }: { section: Section }) {
         justify="space-between"
         px="20px"
         py="14px"
-        bg="#0d0d14"
+        bg="var(--bg-surface)"
         cursor="pointer"
         onClick={() => setOpen((v) => !v)}
-        _hover={{ bg: "#111118" }}
+        _hover={{ bg: "var(--bg-elevated)" }}
         transition="background 0.15s"
       >
         <Text
           fontFamily="'Courier New', monospace"
           fontSize="14px"
           fontWeight="700"
-          color="#d4d4e8"
+          color="var(--text-primary)"
         >
           {section.heading}
         </Text>
-        <Box color="#3a3a5e">
+        <Box color="var(--text-ghost)">
           {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </Box>
       </Flex>
 
       {open && (
-        <Box px="20px" py="16px" bg="#07070b">
+        <Box px="20px" py="16px" bg="var(--bg-code)">
           {section.body.split("\n").map((line, i) =>
             line === "" ? (
               <Box key={i} h="8px" />
@@ -672,7 +675,7 @@ function SectionBlock({ section }: { section: Section }) {
               <Text
                 key={i}
                 fontSize="13px"
-                color="#8a8a9a"
+                color="var(--text-secondary)"
                 lineHeight="1.8"
                 mb="4px"
               >
@@ -708,13 +711,13 @@ function LessonView({
   const diff = DIFF_COLORS[lesson.difficulty];
 
   return (
-    <Flex h="100%" overflow="hidden" bg="#0a0a0f">
+    <Flex h="100%" overflow="hidden" bg="var(--bg-panel)">
       {/* Sidebar nav */}
       <Box
         w="220px"
         flexShrink={0}
-        bg="#07070b"
-        borderRight="1px solid #1a1a28"
+        bg="var(--bg-code)"
+        borderRight="1px solid var(--border)"
         p="20px 16px"
         overflow="auto"
       >
@@ -724,7 +727,7 @@ function LessonView({
             display: "flex",
             alignItems: "center",
             gap: "6px",
-            color: "#4a4a6e",
+            color: "var(--text-muted)",
             fontSize: "11px",
             fontFamily: "monospace",
             background: "none",
@@ -740,7 +743,7 @@ function LessonView({
 
         <Text
           fontSize="10px"
-          color="#3a3a5e"
+          color="var(--text-ghost)"
           fontFamily="monospace"
           letterSpacing="0.1em"
           mb="12px"
@@ -752,7 +755,7 @@ function LessonView({
           <Text
             key={i}
             fontSize="11.5px"
-            color="#4a4a6e"
+            color="var(--text-muted)"
             fontFamily="monospace"
             mb="10px"
             cursor="pointer"
@@ -764,11 +767,11 @@ function LessonView({
           </Text>
         ))}
 
-        <Box h="1px" bg="#1a1a28" my="20px" />
+        <Box h="1px" bg="var(--bg-elevated)" my="20px" />
 
         <Text
           fontSize="10px"
-          color="#3a3a5e"
+          color="var(--text-ghost)"
           fontFamily="monospace"
           letterSpacing="0.1em"
           mb="10px"
@@ -781,11 +784,15 @@ function LessonView({
             px="8px"
             py="4px"
             mb="4px"
-            bg="#0d0d14"
-            border="1px solid #1a1a28"
+            bg="var(--bg-surface)"
+            border="1px solid var(--border)"
             borderRadius="4px"
           >
-            <Text fontSize="10.5px" color="#3a3a5e" fontFamily="monospace">
+            <Text
+              fontSize="10.5px"
+              color="var(--text-ghost)"
+              fontFamily="monospace"
+            >
               {t}
             </Text>
           </Box>
@@ -826,7 +833,7 @@ function LessonView({
             <Text
               fontSize="26px"
               fontWeight="800"
-              color="#e2e2e8"
+              color="var(--text-primary)"
               fontFamily="'Courier New', monospace"
               letterSpacing="-0.03em"
               lineHeight="1.2"
@@ -861,7 +868,12 @@ function LessonView({
           </button>
         </Flex>
 
-        <Text fontSize="13px" color="#5a5a7a" mb="28px" lineHeight="1.6">
+        <Text
+          fontSize="13px"
+          color="var(--text-muted)"
+          mb="28px"
+          lineHeight="1.6"
+        >
           {lesson.description}
         </Text>
 
@@ -888,8 +900,8 @@ function LessonCard({
 
   return (
     <Box
-      bg="#0a0a0f"
-      border="1px solid #1a1a28"
+      bg="var(--bg-panel)"
+      border="1px solid var(--border)"
       borderRadius="12px"
       p="22px"
       cursor="pointer"
@@ -958,14 +970,19 @@ function LessonCard({
       <Text
         fontSize="15px"
         fontWeight="700"
-        color="#d4d4e8"
+        color="var(--text-primary)"
         mb="8px"
         fontFamily="'Courier New', monospace"
         letterSpacing="-0.01em"
       >
         {lesson.title}
       </Text>
-      <Text fontSize="12.5px" color="#4a4a6a" mb="16px" lineHeight="1.6">
+      <Text
+        fontSize="12.5px"
+        color="var(--text-muted)"
+        mb="16px"
+        lineHeight="1.6"
+      >
         {lesson.description}
       </Text>
 
@@ -975,9 +992,9 @@ function LessonCard({
           <Text
             key={t}
             fontSize="10px"
-            color="#3a3a5a"
-            bg="#0d0d14"
-            border="1px solid #1a1a28"
+            color="var(--text-ghost)"
+            bg="var(--bg-surface)"
+            border="1px solid var(--border)"
             px="7px"
             py="2px"
             borderRadius="3px"
@@ -989,7 +1006,7 @@ function LessonCard({
         {lesson.topics.length > 4 && (
           <Text
             fontSize="10px"
-            color="#3a3a5a"
+            color="var(--text-ghost)"
             px="4px"
             py="2px"
             fontFamily="monospace"
@@ -999,7 +1016,7 @@ function LessonCard({
         )}
       </Flex>
 
-      <Flex align="center" gap="4px" color="#3a3a5a">
+      <Flex align="center" gap="4px" color="var(--text-ghost)">
         <Text fontSize="11.5px" fontFamily="monospace">
           Start lesson
         </Text>
@@ -1042,13 +1059,13 @@ export const LearnPage = () => {
   const advancedLessons = LESSONS.filter((l) => l.difficulty === "Advanced");
 
   return (
-    <Box h="100%" overflow="auto" bg="#0a0a0f">
+    <Box h="100%" overflow="auto" bg="var(--bg-panel)">
       {/* Hero */}
       <Box
         px="40px"
         pt="40px"
         pb="32px"
-        borderBottom="1px solid #1a1a28"
+        borderBottom="1px solid var(--border)"
         position="relative"
         overflow="hidden"
       >
@@ -1060,7 +1077,7 @@ export const LearnPage = () => {
           right="0"
           bottom="0"
           opacity={0.03}
-          backgroundImage="linear-gradient(#fb923c 1px, transparent 1px), linear-gradient(90deg, #fb923c 1px, transparent 1px)"
+          backgroundImage="linear-gradient(var(--accent) 1px, transparent 1px), linear-gradient(90deg, var(--accent) 1px, transparent 1px)"
           backgroundSize="32px 32px"
           pointerEvents="none"
         />
@@ -1069,8 +1086,8 @@ export const LearnPage = () => {
           <Box
             px="10px"
             py="4px"
-            bg="rgba(251,146,60,0.08)"
-            border="1px solid rgba(251,146,60,0.2)"
+            bg="var(--accent-dim)"
+            border="1px solid var(--accent-border)"
             borderRadius="5px"
           >
             <Flex align="center" gap="6px">
@@ -1086,8 +1103,12 @@ export const LearnPage = () => {
               </Text>
             </Flex>
           </Box>
-          <Box w="4px" h="4px" borderRadius="50%" bg="#2a2a3e" />
-          <Text fontSize="10px" color="#3a3a5e" fontFamily="monospace">
+          <Box w="4px" h="4px" borderRadius="50%" bg="var(--text-ghost)" />
+          <Text
+            fontSize="10px"
+            color="var(--text-ghost)"
+            fontFamily="monospace"
+          >
             Beginner Friendly
           </Text>
         </Flex>
@@ -1095,7 +1116,7 @@ export const LearnPage = () => {
         <Text
           fontSize="32px"
           fontWeight="800"
-          color="#e2e2e8"
+          color="var(--text-primary)"
           fontFamily="'Courier New', monospace"
           letterSpacing="-0.03em"
           lineHeight="1.15"
@@ -1106,7 +1127,7 @@ export const LearnPage = () => {
 
         <Text
           fontSize="14px"
-          color="#4a4a6a"
+          color="var(--text-muted)"
           mb="24px"
           maxW="560px"
           lineHeight="1.7"
@@ -1136,8 +1157,8 @@ export const LearnPage = () => {
               key={item.label}
               px="9px"
               py="4px"
-              bg="#0d0d14"
-              border="1px solid #1a1a28"
+              bg="var(--bg-surface)"
+              border="1px solid var(--border)"
               borderRadius="4px"
             >
               <Text
@@ -1167,7 +1188,11 @@ export const LearnPage = () => {
           >
             BEGINNER
           </Text>
-          <Text fontSize="11px" color="#2a2a3e" fontFamily="monospace">
+          <Text
+            fontSize="11px"
+            color="var(--text-ghost)"
+            fontFamily="monospace"
+          >
             {beginnerLessons.length} lessons
           </Text>
         </Flex>
@@ -1197,7 +1222,11 @@ export const LearnPage = () => {
           >
             INTERMEDIATE
           </Text>
-          <Text fontSize="11px" color="#2a2a3e" fontFamily="monospace">
+          <Text
+            fontSize="11px"
+            color="var(--text-ghost)"
+            fontFamily="monospace"
+          >
             {intermediateLessons.length} lessons
           </Text>
         </Flex>
@@ -1227,7 +1256,11 @@ export const LearnPage = () => {
           >
             ADVANCED
           </Text>
-          <Text fontSize="11px" color="#2a2a3e" fontFamily="monospace">
+          <Text
+            fontSize="11px"
+            color="var(--text-ghost)"
+            fontFamily="monospace"
+          >
             {advancedLessons.length} lessons
           </Text>
         </Flex>

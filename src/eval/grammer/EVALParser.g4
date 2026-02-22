@@ -193,5 +193,5 @@ whileStatement
 // The catch block now accepts any number of statements, not just one print.
 
 tryStatement
-    : TRY block CATCH block
+    : TRY block CATCH LPAREN IDENTIFIER RPAREN block
     ;

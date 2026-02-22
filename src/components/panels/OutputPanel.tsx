@@ -22,23 +22,23 @@ export const OutputPanel = ({
     result && (result.logs.length > 0 || result.error || result.returnValue);
 
   return (
-    <Flex direction="column" h="100%" bg="#0a0a0f">
+    <Flex direction="column" h="100%" bg="var(--bg-panel)">
       {/* Header */}
       <Flex
         h="36px"
         align="center"
         px="14px"
         gap="8px"
-        borderBottom="1px solid #1e1e28"
+        borderBottom="1px solid var(--border)"
         flexShrink={0}
         justify="space-between"
       >
         <Flex align="center" gap="6px">
-          <Terminal size={12} color="#4a4a5e" />
+          <Terminal size={12} color="var(--text-muted)" />
           <Text
             fontSize="11px"
             fontWeight="600"
-            color="#4a4a5e"
+            color="var(--text-muted)"
             letterSpacing="0.08em"
             fontFamily="monospace"
           >
@@ -74,17 +74,19 @@ export const OutputPanel = ({
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              color: "#3a3a4e",
+              color: "var(--text-ghost)",
               padding: "2px",
               display: "flex",
               alignItems: "center",
               transition: "color 0.15s",
             }}
             onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.color = "#6a6a7e")
+              ((e.currentTarget as HTMLButtonElement).style.color =
+                "var(--text-muted)")
             }
             onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.color = "#3a3a4e")
+              ((e.currentTarget as HTMLButtonElement).style.color =
+                "var(--text-ghost)")
             }
           >
             <Trash2 size={12} />
@@ -102,13 +104,13 @@ export const OutputPanel = ({
         lineHeight="1.7"
       >
         {isRunning && (
-          <Text color="#4a4a5e" fontStyle="italic">
+          <Text color="var(--text-muted)" fontStyle="italic">
             Running...
           </Text>
         )}
 
         {!isRunning && !hasOutput && (
-          <Text color="#2a2a38" userSelect="none">
+          <Text color="var(--text-ghost)" userSelect="none">
             // Output will appear here
           </Text>
         )}
@@ -121,7 +123,7 @@ export const OutputPanel = ({
                 ? "#fde68a"
                 : log.startsWith("[ERROR]")
                   ? "#f87171"
-                  : "#d4d4e8"
+                  : "var(--text-primary)"
             }
             whiteSpace="pre-wrap"
             wordBreak="break-word"
@@ -132,7 +134,7 @@ export const OutputPanel = ({
 
         {result?.returnValue !== undefined && (
           <Flex align="flex-start" gap="8px" mt="4px">
-            <Text color="#4a4a5e" flexShrink={0}>
+            <Text color="var(--text-muted)" flexShrink={0}>
               ←
             </Text>
             <Text color="#c4b5fd" whiteSpace="pre-wrap" wordBreak="break-word">

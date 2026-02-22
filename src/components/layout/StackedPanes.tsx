@@ -57,12 +57,12 @@ export const StackedPanes = ({
       <Box
         h="4px"
         flexShrink={0}
-        bg="#1a1a22"
+        bg="var(--drag-handle)"
         cursor="row-resize"
         transition="background 0.15s"
         onMouseDown={onMouseDown}
-        _hover={{ bg: "#fb923c40" }}
-        _active={{ bg: "#fb923c80" }}
+        _hover={{ bg: "var(--accent-dim)" }}
+        _active={{ bg: "var(--accent-border)" }}
         position="relative"
       >
         <Flex
@@ -73,7 +73,13 @@ export const StackedPanes = ({
           pointerEvents="none"
         >
           {[...Array(5)].map((_, i) => (
-            <Box key={i} w="2px" h="2px" borderRadius="full" bg="#2a2a38" />
+            <Box
+              key={i}
+              w="2px"
+              h="2px"
+              borderRadius="full"
+              bg="var(--text-ghost)"
+            />
           ))}
         </Flex>
       </Box>

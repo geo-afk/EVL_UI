@@ -13,7 +13,6 @@ interface AIPanelProps {
   onClear: () => void;
 }
 
-// Very lightweight "renderer" for the AI markdown output
 function renderAIContent(content: string) {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
@@ -29,13 +28,12 @@ function renderAIContent(content: string) {
         codeLang = line.slice(3).trim();
         codeLines = [];
       } else {
-        // Close code block
         inCodeBlock = false;
         elements.push(
           <Box
             key={`code-${i}`}
-            bg="#0a0a0f"
-            border="1px solid #1e1e28"
+            bg="var(--bg-code)"
+            border="1px solid var(--border)"
             borderRadius="6px"
             p="10px 14px"
             my="6px"
@@ -44,7 +42,7 @@ function renderAIContent(content: string) {
             {codeLang && (
               <Text
                 fontSize="10px"
-                color="#4a4a5e"
+                color="var(--text-muted)"
                 letterSpacing="0.06em"
                 mb="4px"
                 fontFamily="monospace"
@@ -57,7 +55,7 @@ function renderAIContent(content: string) {
                 key={ci}
                 fontSize="12.5px"
                 fontFamily="'JetBrains Mono', 'Courier New', monospace"
-                color="#d4d4e8"
+                color="var(--text-primary)"
                 whiteSpace="pre"
                 lineHeight="1.7"
               >
@@ -76,7 +74,6 @@ function renderAIContent(content: string) {
       return;
     }
 
-    // Bold headers like **Output:** or **Strengths:**
     if (line.startsWith("**") && line.includes("**")) {
       const match = line.match(/^\*\*(.+?)\*\*(.*)/);
       if (match) {
@@ -91,14 +88,14 @@ function renderAIContent(content: string) {
             <Text
               fontSize="11px"
               fontWeight="700"
-              color="#fb923c"
+              color="var(--accent)"
               letterSpacing="0.08em"
               fontFamily="monospace"
             >
               {match[1].toUpperCase()}
             </Text>
             {match[2] && (
-              <Text fontSize="12.5px" color="#d4d4e8">
+              <Text fontSize="12.5px" color="var(--text-primary)">
                 {match[2]}
               </Text>
             )}
@@ -108,14 +105,22 @@ function renderAIContent(content: string) {
       }
     }
 
-    // Bullet points
     if (line.startsWith("- ") || line.startsWith("• ")) {
       elements.push(
         <Flex key={i} align="flex-start" gap="8px" pl="4px">
-          <Text color="#3a3a4e" flexShrink={0} mt="2px" fontSize="10px">
+          <Text
+            color="var(--text-ghost)"
+            flexShrink={0}
+            mt="2px"
+            fontSize="10px"
+          >
             ▸
           </Text>
-          <Text fontSize="12.5px" color="#b4b4c8" lineHeight="1.7">
+          <Text
+            fontSize="12.5px"
+            color="var(--text-secondary)"
+            lineHeight="1.7"
+          >
             {line.slice(2)}
           </Text>
         </Flex>,
@@ -129,7 +134,12 @@ function renderAIContent(content: string) {
     }
 
     elements.push(
-      <Text key={i} fontSize="12.5px" color="#b4b4c8" lineHeight="1.7">
+      <Text
+        key={i}
+        fontSize="12.5px"
+        color="var(--text-secondary)"
+        lineHeight="1.7"
+      >
         {line}
       </Text>,
     );
@@ -139,9 +149,9 @@ function renderAIContent(content: string) {
 }
 
 const ModeIcon = ({ mode }: { mode: "run" | "insights" | null }) => {
-  if (mode === "run") return <Zap size={12} color="#fb923c" />;
-  if (mode === "insights") return <Eye size={12} color="#7dd3fc" />;
-  return <Cpu size={12} color="#4a4a5e" />;
+  if (mode === "run") return <Zap size={12} color="var(--accent)" />;
+  if (mode === "insights") return <Eye size={12} color="var(--accent2)" />;
+  return <Cpu size={12} color="var(--text-muted)" />;
 };
 
 export const AIPanel = ({
@@ -159,15 +169,22 @@ export const AIPanel = ({
 
   const hasContent = result && (result.content || result.error);
 
+  const headerColor =
+    activeMode === "run"
+      ? "var(--accent)"
+      : activeMode === "insights"
+        ? "var(--accent2)"
+        : "var(--text-muted)";
+
   return (
-    <Flex direction="column" h="100%" bg="#0a0a0f">
+    <Flex direction="column" h="100%" bg="var(--bg-panel)">
       {/* Header */}
       <Flex
         h="36px"
         align="center"
         px="14px"
         gap="8px"
-        borderBottom="1px solid #1e1e28"
+        borderBottom="1px solid var(--border)"
         flexShrink={0}
         justify="space-between"
       >
@@ -176,13 +193,7 @@ export const AIPanel = ({
           <Text
             fontSize="11px"
             fontWeight="600"
-            color={
-              activeMode === "run"
-                ? "#fb923c"
-                : activeMode === "insights"
-                  ? "#7dd3fc"
-                  : "#4a4a5e"
-            }
+            color={headerColor}
             letterSpacing="0.08em"
             fontFamily="monospace"
             transition="color 0.2s"
@@ -191,7 +202,7 @@ export const AIPanel = ({
           </Text>
           {isLoading && (
             <Box animation="spin 1s linear infinite" display="flex" ml="4px">
-              <Loader size={11} color="#fb923c" />
+              <Loader size={11} color="var(--accent)" />
             </Box>
           )}
         </Flex>
@@ -204,17 +215,19 @@ export const AIPanel = ({
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              color: "#3a3a4e",
+              color: "var(--text-ghost)",
               padding: "2px",
               display: "flex",
               alignItems: "center",
               transition: "color 0.15s",
             }}
             onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.color = "#6a6a7e")
+              ((e.currentTarget as HTMLButtonElement).style.color =
+                "var(--text-muted)")
             }
             onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.color = "#3a3a4e")
+              ((e.currentTarget as HTMLButtonElement).style.color =
+                "var(--text-ghost)")
             }
           >
             <Trash2 size={12} />
@@ -231,7 +244,7 @@ export const AIPanel = ({
                 key={i}
                 h="12px"
                 w={`${w}%`}
-                bg="#1a1a22"
+                bg="var(--bg-elevated)"
                 borderRadius="4px"
                 style={{
                   animation: `pulse 1.5s ease-in-out ${i * 0.15}s infinite`,
@@ -249,10 +262,18 @@ export const AIPanel = ({
             justify="center"
             h="100%"
           >
-            <Text color="#2a2a38" fontSize="12px" fontFamily="monospace">
+            <Text
+              color="var(--text-ghost)"
+              fontSize="12px"
+              fontFamily="monospace"
+            >
               // Use AI RUN to simulate execution
             </Text>
-            <Text color="#2a2a38" fontSize="12px" fontFamily="monospace">
+            <Text
+              color="var(--text-ghost)"
+              fontSize="12px"
+              fontFamily="monospace"
+            >
               // Use AI INSIGHTS to analyze your code
             </Text>
           </Flex>
@@ -282,7 +303,6 @@ export const AIPanel = ({
         )}
       </Box>
 
-      {/* Inline animation styles */}
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
