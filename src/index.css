@@ -13,6 +13,36 @@
   src: url("./assets/fonts/JetBrainsMono-Regular.woff2");
 }
 
+/* ─── Default theme tokens (Void) ────────────────────────────────────────────
+   These are overwritten at runtime by ThemeContext/applyTheme().
+   Defined here so the page never flashes unstyled before JS runs.       */
+:root {
+  --bg-base: #0e0e12;
+  --bg-panel: #0a0a0f;
+  --bg-surface: #16161e;
+  --bg-elevated: #1e1e2e;
+  --bg-code: #07070b;
+
+  --border: #1e1e28;
+  --border-subtle: #141420;
+
+  --text-primary: #d4d4e8;
+  --text-secondary: #8a8a9a;
+  --text-muted: #4a4a5e;
+  --text-ghost: #2a2a38;
+
+  --accent: #fb923c;
+  --accent-dim: rgba(251, 146, 60, 0.12);
+  --accent-border: rgba(251, 146, 60, 0.25);
+  --accent-glow: rgba(251, 146, 60, 0.4);
+
+  --accent2: #7dd3fc;
+  --accent2-dim: rgba(125, 211, 252, 0.1);
+  --accent2-border: #1e4976;
+
+  --drag-handle: #1a1a22;
+}
+
 *,
 *::before,
 *::after {
@@ -30,8 +60,8 @@ body,
 }
 
 body {
-  background: #0e0e12;
-  color: #d4d4e8;
+  background: var(--bg-base);
+  color: var(--text-primary);
   font-family:
     "JetBrains Mono", "Fira Code", "Cascadia Code", "Courier New", monospace;
   -webkit-font-smoothing: antialiased;
@@ -47,9 +77,9 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2a38;
+  background: var(--bg-elevated);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a4e;
+  background: var(--border);
 }

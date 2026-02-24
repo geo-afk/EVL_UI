@@ -30,7 +30,6 @@ export const SplitLayout = ({
       const rect = containerRef.current.getBoundingClientRect();
       const totalWidth = rect.width;
       let newLeftPx = e.clientX - rect.left;
-
       newLeftPx = Math.max(
         minLeftPx,
         Math.min(newLeftPx, totalWidth - minRightPx),
@@ -65,15 +64,14 @@ export const SplitLayout = ({
       <Box
         w="4px"
         flexShrink={0}
-        bg="#1a1a22"
+        bg="var(--drag-handle)"
         cursor="col-resize"
         position="relative"
         transition="background 0.15s"
         onMouseDown={onMouseDown}
-        _hover={{ bg: "#fb923c40" }}
-        _active={{ bg: "#fb923c80" }}
+        _hover={{ bg: "var(--accent-dim)" }}
+        _active={{ bg: "var(--accent-border)" }}
       >
-        {/* visual grip dots */}
         <Flex
           direction="column"
           align="center"
@@ -83,7 +81,13 @@ export const SplitLayout = ({
           pointerEvents="none"
         >
           {[...Array(5)].map((_, i) => (
-            <Box key={i} w="2px" h="2px" borderRadius="full" bg="#2a2a38" />
+            <Box
+              key={i}
+              w="2px"
+              h="2px"
+              borderRadius="full"
+              bg="var(--text-ghost)"
+            />
           ))}
         </Flex>
       </Box>
