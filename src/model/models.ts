@@ -50,7 +50,8 @@ export const EVAL_SAMPLE: Language = {
   id: EVAL_LANGUAGE_ID,
   label: "Eval",
   monacoLang: "Eval",
-  defaultCode: `int x = 10
+  defaultCode: `
+int x = 10
 float y = 20.5
 int sum = x + y  // Implicit conversion (weak typing)
 
@@ -58,25 +59,33 @@ print("Sum:", sum)
 const int newVal = cast(y, int)
 
 
-int pi = PI
+float pi = PI
 int dayOfWeek = DAYS_IN_WEEK
 int hourInDay =  HOURS_IN_DAY
 int year = YEAR
 
+int by = 0
+int number = 0
+
 float g = pow(by, number)
-int val = sqrt(num)
-int minimum= min(y, r)
+
+float val = sqrt(g)
+float minimum = min(cast(y, int), cast(x, int))
+
+int t = 10
+int w = 23
 int maxVal = max(t, w)
 float value = round(y)
 
 
 try {
   int result = 100 / 0
-} catch {
-  print("Error: Division by zero!")
+} catch(a) {
+  print("Error: Division by zero!", a)
 }
 
-int c = 20 + 40 * 40  // Correctly evaluates to 1620`,
+int c = 20 + 40 * 40  // Correctly evaluates to 1620t
+`,
 };
 
 
