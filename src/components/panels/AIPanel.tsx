@@ -309,4 +309,4 @@ export const AIPanel = ({
       `}</style>
     </Flex>
   );
-};
+}; 

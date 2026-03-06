@@ -19,6 +19,10 @@ import {
   type EditorTheme,
 } from "../../model/editorThemes";
 import { ThemeDropdown } from "./EditorTheme";
+import { fetchAIComplete } from "../../api";
+
+// How long the user must stop typing before an autocomplete request fires (ms)
+const AUTOCOMPLETE_DEBOUNCE_MS = 600;
 
 interface CodeEditorProps {
   code: string;
@@ -46,6 +50,11 @@ export const CodeEditor = ({
       EDITOR_THEMES.find((t) => t.id === DEFAULT_THEME_ID) ?? EDITOR_THEMES[0],
   );
 
+  // Debounce timer ref for autocomplete
+  const autocompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Latest pending inline completion so the provider can read it synchronously
+  const pendingCompletion = useRef<string>("");
+
   const handleThemeSelect = (theme: EditorTheme) => {
     setActiveTheme(theme);
     if (monacoRef.current) {
@@ -71,6 +80,7 @@ export const CodeEditor = ({
       onRun();
     });
 
+    // ── Diagnostics + debounced autocomplete prefetch ─────────────────────
     editor.onDidChangeModelContent(() => {
       const value = editor.getValue();
       updateDiagnostics(value, monaco);
@@ -88,6 +98,62 @@ export const CodeEditor = ({
         );
         setErrors(err.length + warnings.length);
       }
+
+      // Debounce: cancel any previous pending request then schedule a new one
+      if (autocompleteTimer.current) clearTimeout(autocompleteTimer.current);
+      pendingCompletion.current = "";
+
+      autocompleteTimer.current = setTimeout(async () => {
+        const position = editor.getPosition();
+        if (!position) return;
+        const currentModel = editor.getModel();
+        if (!currentModel) return;
+
+        const lineText = currentModel
+          .getLineContent(position.lineNumber)
+          .substring(0, position.column - 1)
+          .trim();
+
+        if (!lineText) return;
+
+        try {
+          const data = await fetchAIComplete(lineText);
+          if (data.completion) {
+            pendingCompletion.current = data.completion;
+            // Trigger Monaco's inline suggestion widget to re-evaluate
+            editor.trigger("ai", "editor.action.inlineSuggest.trigger", {});
+          }
+        } catch {
+          // Silently ignore autocomplete errors — non-critical
+        }
+      }, AUTOCOMPLETE_DEBOUNCE_MS);
+    });
+
+    // ── Inline completions provider ───────────────────────────────────────
+    // Returns whatever was prefetched by the debounce above
+    monaco.languages.registerInlineCompletionsProvider(EVAL_LANGUAGE_ID, {
+      provideInlineCompletions: (_model: Monaco.editor.ITextModel, position: Monaco.Position) => {
+        const completion = pendingCompletion.current;
+        if (!completion) return { items: [] };
+
+        return {
+          items: [
+            {
+              insertText: completion,
+              range: {
+                startLineNumber: position.lineNumber,
+                startColumn: position.column,
+                endLineNumber: position.lineNumber,
+                endColumn: position.column,
+              },
+            },
+          ],
+        };
+      },
+      freeInlineCompletions: () => {
+        pendingCompletion.current = "";
+      },
+      disposeInlineCompletions: () => {},
     });
   };
 
@@ -271,6 +337,9 @@ export const CodeEditor = ({
             },
             suggest: {
               showIcons: true,
+            },
+            inlineSuggest: {
+              enabled: true,
             },
           }}
         />

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { Code2, BookOpen, Palette, ChevronDown } from "lucide-react";
-import { EditorPage } from "./pages/EditorPage";
+import {EditorPage} from "./pages/EditorPage";
 import { LearnPage } from "./pages/LearnPage";
 import { AppThemeProvider, useAppTheme } from "./theme/ThemeContext";
 
