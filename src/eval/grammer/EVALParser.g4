@@ -2,25 +2,26 @@ parser grammar EVALParser;
 
 options { tokenVocab=EVALLexer; }
 
+
 program
     : statement* EOF
     ;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  STATEMENTS
-//  A statement is one executable unit.  Adding new constructs here (for, match,
-//  return …) only requires adding one alternative rather than touching a dozen
-//  rules as before.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 statement
     : variableDeclaration           // int x = 10
     | constDeclaration              // const int x = 10
     | assignment                    // x = 20  |  x += 5
-    | printStatement                // print("hello", x)
+    | incrementDecrement            // x++  |  x--
     | ifStatement                   // if (cond) { ... } else { ... }
     | whileStatement                // while (cond) { ... }
-    | tryStatement                  // try { ... } catch { ... }
+    | tryStatement                  // try { ... } catch(e) { ... }
+    | breakStatement                // break
+    | continueStatement             // continue
+    | builtinCallStatement          // standalone built-in call, e.g. print(...)
     | block                         // bare { ... }
     ;
 
@@ -30,6 +31,7 @@ block
     : LBRACE statement* RBRACE
     ;
 
+// ─── Variable / Const declarations ───────────────────────────────────────────
 
 variableDeclaration
     : type IDENTIFIER ASSIGN expression
@@ -53,6 +55,23 @@ assignOp
     | DIV_ASSIGN
     ;
 
+// ─── Increment / Decrement (postfix only) ─────────────────────────────────────
+// e.g.  x++   x--
+// Placing these as statements (not inside expression) avoids the classic
+// ambiguity between prefix/postfix uses and keeps the expression rule clean.
+
+incrementDecrement
+    : IDENTIFIER (INCREMENT | DECREMENT)
+    ;
+
+breakStatement
+    : BREAK
+    ;
+
+continueStatement
+    : CONTINUE
+    ;
+
 // ─── Type names ───────────────────────────────────────────────────────────────
 
 type
@@ -63,9 +82,7 @@ type
     ;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  EXPRESSIONS  (ordered by ascending precedence — ANTLR4 resolves ambiguity
-//  by preferring alternatives listed first, so lower-precedence operators
-//  appear first here and bind more loosely)
+//  EXPRESSIONS  (ordered by ascending precedence)
 //
 //  Precedence levels (lowest → highest):
 //    1. Logical OR            ||
@@ -76,35 +93,39 @@ type
 //    6. Multiplicative        *  /  %
 //    7. Unary                 -  !
 //    8. Primary               literal, identifier, macro, function call, (expr)
+//
+//  ANTLR4 resolves left-recursive ambiguity by favouring the earlier alternative
+//  so lower-precedence operators appear first.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 expression
+    // ── Level 1 – Logical OR ─────────────────────────────────────────────────
+    : expression OR_OP expression                                        # logicalOrExpr
 
-    // ── Equality ─────────────────────────────────────────────────────────────
-    : expression op=(EQ | NEQ) expression                               # equalityExpr
+    // ── Level 2 – Logical AND ────────────────────────────────────────────────
+    | expression AND_OP expression                                       # logicalAndExpr
 
-    // ── Relational ───────────────────────────────────────────────────────────
+    // ── Level 3 – Equality ───────────────────────────────────────────────────
+    | expression op=(EQ | NEQ) expression                               # equalityExpr
+
+    // ── Level 4 – Relational ─────────────────────────────────────────────────
     | expression op=(LT | GT | LTE | GTE) expression                   # relationalExpr
 
-    // ── Additive ─────────────────────────────────────────────────────────────
+    // ── Level 5 – Additive ───────────────────────────────────────────────────
     | expression op=(PLUS | MINUS) expression                           # additiveExpr
 
-    // ── Multiplicative ───────────────────────────────────────────────────────
+    // ── Level 6 – Multiplicative ─────────────────────────────────────────────
     | expression op=(MULTI | DIVIDE | MODULUS) expression               # multiplicativeExpr
 
-    // ── Unary ────────────────────────────────────────────────────────────────
+    // ── Level 7 – Unary ──────────────────────────────────────────────────────
     | MINUS expression                                                   # unaryMinusExpr
-    // ── Grouping ─────────────────────────────────────────────────────────────
+    | NOT_OP expression                                                  # unaryNotExpr
+
+    // ── Level 8 – Grouping ───────────────────────────────────────────────────
     | LPAREN expression RPAREN                                          # parenExpr
 
     // ── Built-in function calls ───────────────────────────────────────────────
-    | castCall                                                           # castExpr
-    | powCall                                                            # powExpr
-    | sqrtCall                                                           # sqrtExpr
-    | minCall                                                            # minExpr
-    | maxCall                                                            # maxExpr
-    | roundCall                                                          # roundExpr
-    | absCall                                                            # absExpr
+    | builtinFunc                                                        # builtinExpr
 
     // ── Primaries ────────────────────────────────────────────────────────────
     | macroValue                                                         # macroExpr
@@ -114,13 +135,34 @@ expression
     | STRING                                                             # stringLiteral
     | TRUE                                                               # trueLiteral
     | FALSE                                                              # falseLiteral
+    | NULL                                                               # nullLiteral
     ;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  BUILT-IN FUNCTION CALLS
-//  Arguments accept full expressions, not just bare identifiers — so
-//  pow(x + 1, 2) or sqrt(100) are both valid.
+//  BUILT-IN FUNCTIONS
+//  Separated into builtinFunc (usable inside expressions) and
+//  builtinCallStatement (when used as a bare statement so the parser does not
+//  need to consider every expression as a potential statement, which would
+//  require an expressionStatement rule and risk introducing new ambiguities).
 // ═══════════════════════════════════════════════════════════════════════════════
+
+builtinFunc
+    : castCall
+    | powCall
+    | sqrtCall
+    | minCall
+    | maxCall
+    | roundCall
+    | absCall
+    ;
+
+// builtinCallStatement allows print (and any future void built-ins) to appear
+// as a standalone statement WITHOUT making every expression a valid statement.
+builtinCallStatement
+    : printStatement
+    ;
+
+// ─── Individual call rules ────────────────────────────────────────────────────
 
 castCall
     : CAST LPAREN expression COMMA type RPAREN
@@ -163,16 +205,20 @@ macroValue
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  PRINT STATEMENT
+//
+//  FIX: The original rule had `STRING | expression` which caused an ambiguity
+//  because `expression` already includes a `stringLiteral` alternative.  The
+//  STRING-specific alternative has been removed; everything goes through
+//  expression, which covers STRING via the stringLiteral labelled alternative.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 printStatement
     : PRINT LPAREN printArg (COMMA printArg)* RPAREN
     ;
 
-// A print argument is either a string literal or any expression
+// FIX: removed standalone STRING alternative — expression already handles it.
 printArg
-    : STRING
-    | expression
+    : expression
     ;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -190,7 +236,6 @@ whileStatement
     ;
 
 // ─── Try / Catch ──────────────────────────────────────────────────────────────
-// The catch block now accepts any number of statements, not just one print.
 
 tryStatement
     : TRY block CATCH LPAREN IDENTIFIER RPAREN block
