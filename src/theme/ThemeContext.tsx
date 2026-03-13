@@ -21,9 +21,13 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<AppTheme>(
-    () => APP_THEMES.find((t) => t.id === DEFAULT_THEME_ID) ?? APP_THEMES[0],
-  );
+  const [theme, setTheme] = useState<AppTheme>(() => {
+    const savedId = localStorage.getItem("appThemeId");
+    return (
+      APP_THEMES.find((t) => t.id === (savedId ?? DEFAULT_THEME_ID)) ??
+      APP_THEMES[0]
+    );
+  });
 
   // Apply CSS variables on mount and whenever theme changes
   useEffect(() => {
@@ -32,7 +36,10 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
 
   const setThemeById = (id: string) => {
     const found = APP_THEMES.find((t) => t.id === id);
-    if (found) setTheme(found);
+    if (found) {
+      setTheme(found);
+      localStorage.setItem("appThemeId", found.id);
+    }
   };
 
   return (

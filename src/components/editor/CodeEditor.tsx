@@ -45,10 +45,13 @@ export const CodeEditor = ({
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof Monaco | null>(null);
   const [errors, setErrors] = useState<number>(0);
-  const [activeTheme, setActiveTheme] = useState<EditorTheme>(
-    () =>
-      EDITOR_THEMES.find((t) => t.id === DEFAULT_THEME_ID) ?? EDITOR_THEMES[0],
-  );
+  const [activeTheme, setActiveTheme] = useState<EditorTheme>(() => {
+    const savedId = localStorage.getItem("editorThemeId");
+    return (
+      EDITOR_THEMES.find((t) => t.id === (savedId ?? DEFAULT_THEME_ID)) ??
+      EDITOR_THEMES[0]
+    );
+  });
 
   // Debounce timer ref for autocomplete
   const autocompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,6 +60,7 @@ export const CodeEditor = ({
 
   const handleThemeSelect = (theme: EditorTheme) => {
     setActiveTheme(theme);
+    localStorage.setItem("editorThemeId", theme.id);
     if (monacoRef.current) {
       monacoRef.current.editor.setTheme(theme.id);
     }

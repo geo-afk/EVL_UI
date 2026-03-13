@@ -68,7 +68,7 @@ const DIFF_COLORS = {
 
 // ─────────────────────────────────────────────
 // SYNTAX HIGHLIGHTER
-// Gives EVL code its own identity
+// Gives EVAL code its own identity
 // ─────────────────────────────────────────────
 const KEYWORDS = ["int", "float", "const", "print", "try", "catch", "cast"];
 const BUILTINS = ["pow", "sqrt", "min", "max", "round"];
@@ -125,7 +125,7 @@ function tokenizeLine(line: string): React.ReactNode[] {
   return tokens;
 }
 
-function EVLCode({ code, label }: { code: string; label?: string }) {
+function EVALCode({ code, label }: { code: string; label?: string }) {
   return (
     <Box my="14px">
       {label && (
@@ -167,7 +167,7 @@ function EVLCode({ code, label }: { code: string; label?: string }) {
             fontFamily="monospace"
             letterSpacing="0.06em"
           >
-            evl
+            eval
           </Text>
         </Flex>
         <Box p="16px 20px" overflow="auto">
@@ -267,34 +267,34 @@ function NoteBox({
 const LESSONS: Lesson[] = [
   {
     id: "intro",
-    title: "Welcome to EVL",
+    title: "Welcome to EVAL",
     subtitle: "Your first steps",
     description:
-      "What EVL is, how it works, and why weak typing makes it flexible.",
+      "What EVAL is, how it works, and why weak typing makes it flexible.",
     difficulty: "Beginner",
     icon: <Star size={16} />,
     accentColor: "#c084fc",
     topics: ["Overview", "Weak Typing", "Implicit Conversion", "Comments"],
     sections: [
       {
-        heading: "What is EVL?",
-        body: `EVL is a statically-typed, weakly-typed programming language designed for clarity and ease of learning. You declare what type your variable is, but EVL is smart enough to convert between compatible types automatically when needed — this is called implicit conversion.\n\nThink of it like a calculator: you can add an integer (3) and a decimal number (2.5) and it just works — you don't have to do anything special.`,
-        note: "Statically-typed means you write the type (int or float) when creating a variable. Weakly-typed means EVL can bend those types in operations when it makes sense.",
+        heading: "What is EVAL?",
+        body: `EVAL is a statically-typed, weakly-typed programming language designed for clarity and ease of learning. You declare what type your variable is, but EVAL is smart enough to convert between compatible types automatically when needed — this is called implicit conversion.\n\nThink of it like a calculator: you can add an integer (3) and a decimal number (2.5) and it just works — you don't have to do anything special.`,
+        note: "Statically-typed means you write the type (int or float) when creating a variable. Weakly-typed means EVAL can bend those types in operations when it makes sense.",
       },
       {
-        heading: "Your First EVL Program",
-        body: `Every EVL program is a series of statements. The simplest thing you can do is store a value and print it.`,
+        heading: "Your First EVAL Program",
+        body: `Every EVAL program is a series of statements. The simplest thing you can do is store a value and print it.`,
         codeBlocks: [
           {
-            label: "Hello, EVL",
+            label: "Hello, EVAL",
             code: `int x = 10\nfloat y = 20.5\nint sum = x + y  // Implicit conversion happens here\nprint("Sum:", sum)`,
           },
         ],
-        tip: "EVL adds x (an int) and y (a float). The result is automatically treated as an int for storage in 'sum'. This is weak typing in action!",
+        tip: "EVAL adds x (an int) and y (a float). The result is automatically treated as an int for storage in 'sum'. This is weak typing in action!",
       },
       {
         heading: "Comments",
-        body: `Comments are notes you leave in your code. EVL ignores them entirely — they're just for humans reading the code.\n\nEVL supports two comment styles:`,
+        body: `Comments are notes you leave in your code. EVAL ignores them entirely — they're just for humans reading the code.\n\nEVAL supports two comment styles:`,
         codeBlocks: [
           {
             label: "Comment styles",
@@ -318,7 +318,7 @@ const LESSONS: Lesson[] = [
     sections: [
       {
         heading: "What is a Variable?",
-        body: `A variable is like a labelled box that holds a value. You give the box a name, and you can look inside it or replace what's in it any time.\n\nIn EVL, before you create a variable you must declare its type — what kind of value it will hold. This helps EVL catch mistakes early.`,
+        body: `A variable is like a labelled box that holds a value. You give the box a name, and you can look inside it or replace what's in it any time.\n\nIn EVAL, before you create a variable you must declare its type — what kind of value it will hold. This helps EVAL catch mistakes early.`,
         note: "Variable names can contain letters, numbers, and underscores, but must START with a letter or underscore. They are case-sensitive: myVal and MyVal are different variables.",
       },
       {
@@ -330,7 +330,7 @@ const LESSONS: Lesson[] = [
             code: `int apples = 5\nint temperature = -10\nint score = 0\nint year = 2025\n\nprint("Apples:", apples)\nprint("Temperature:", temperature)`,
           },
         ],
-        tip: "If you try to store a decimal like 3.14 into an int, EVL will truncate (cut off) the decimal part, giving you 3.",
+        tip: "If you try to store a decimal like 3.14 into an int, EVAL will truncate (cut off) the decimal part, giving you 3.",
       },
       {
         heading: "float — Decimal Numbers",
@@ -341,7 +341,7 @@ const LESSONS: Lesson[] = [
             code: `float price = 9.99\nfloat pi = 3.14159\nfloat gravity = 9.81\nfloat temperature = -3.5\n\nprint("Price: $", price)\nprint("Gravity:", gravity)`,
           },
         ],
-        note: "float numbers always need a decimal point in EVL. '20' is an int, but '20.0' is a float.",
+        note: "float numbers always need a decimal point in EVAL. '20' is an int, but '20.0' is a float.",
       },
       {
         heading: "const — Values That Never Change",
@@ -360,7 +360,7 @@ const LESSONS: Lesson[] = [
     id: "constants",
     title: "Built-in Constants",
     subtitle: "PI, DAYS_IN_WEEK, HOURS_IN_DAY, YEAR",
-    description: "EVL ships with ready-to-use mathematical and time constants.",
+    description: "EVAL ships with ready-to-use mathematical and time constants.",
     difficulty: "Beginner",
     icon: <Star size={16} />,
     accentColor: "#fb923c",
@@ -368,7 +368,7 @@ const LESSONS: Lesson[] = [
     sections: [
       {
         heading: "What are Built-in Constants?",
-        body: `EVL comes with a set of pre-defined constants you can use at any time without declaring them yourself. They represent commonly needed values so you don't have to memorise or hardcode them.\n\nThink of them as cheat codes EVL gives you for free.`,
+        body: `EVAL comes with a set of pre-defined constants you can use at any time without declaring them yourself. They represent commonly needed values so you don't have to memorise or hardcode them.\n\nThink of them as cheat codes EVAL gives you for free.`,
         tip: "Built-in constants always start with a capital letter. They're available everywhere in your program.",
       },
       {
@@ -380,7 +380,7 @@ const LESSONS: Lesson[] = [
             code: `float radius = 5.0\nfloat area = PI * radius * radius\nfloat circumference = 2 * PI * radius\n\nprint("Circle area:", area)\nprint("Circumference:", circumference)`,
           },
         ],
-        note: "PI stores the value 3.14159265... EVL handles the precision for you.",
+        note: "PI stores the value 3.14159265... EVAL handles the precision for you.",
       },
       {
         heading: "DAYS_IN_WEEK, HOURS_IN_DAY, YEAR",
@@ -400,7 +400,7 @@ const LESSONS: Lesson[] = [
     title: "Operators & Expressions",
     subtitle: "+, -, *, /, %, and order of operations",
     description:
-      "Perform calculations and understand how EVL evaluates expressions.",
+      "Perform calculations and understand how EVAL evaluates expressions.",
     difficulty: "Beginner",
     icon: <Calculator size={16} />,
     accentColor: "#f472b6",
@@ -408,14 +408,14 @@ const LESSONS: Lesson[] = [
     sections: [
       {
         heading: "Arithmetic Operators",
-        body: `EVL supports all the standard math operations you learned in school. Each operator works on two values and produces a result.`,
+        body: `EVAL supports all the standard math operations you learned in school. Each operator works on two values and produces a result.`,
         codeBlocks: [
           {
             label: "All arithmetic operators",
             code: `int a = 20\nint b = 6\n\nint sum = a + b       // 26 — addition\nint diff = a - b      // 14 — subtraction\nint product = a * b   // 120 — multiplication\nint quotient = a / b  // 3 — integer division (no decimal)\nint remainder = a % b // 2 — modulus (remainder after division)\n\nprint("Sum:", sum)\nprint("Remainder:", remainder)`,
           },
         ],
-        note: "When you divide two ints, EVL performs integer division — the decimal is dropped. 20 / 6 = 3, not 3.33. Use floats if you need the decimal.",
+        note: "When you divide two ints, EVAL performs integer division — the decimal is dropped. 20 / 6 = 3, not 3.33. Use floats if you need the decimal.",
       },
       {
         heading: "Modulus — The Remainder Operator",
@@ -429,7 +429,7 @@ const LESSONS: Lesson[] = [
       },
       {
         heading: "Order of Operations",
-        body: `Just like in school mathematics, EVL follows PEMDAS/BODMAS — multiplication and division happen before addition and subtraction. Use parentheses to control the order.\n\nThis is the same as real math, so no surprises!`,
+        body: `Just like in school mathematics, EVAL follows PEMDAS/BODMAS — multiplication and division happen before addition and subtraction. Use parentheses to control the order.\n\nThis is the same as real math, so no surprises!`,
         codeBlocks: [
           {
             label: "Order of operations",
@@ -445,7 +445,7 @@ const LESSONS: Lesson[] = [
     title: "Built-in Functions",
     subtitle: "pow, sqrt, min, max, round, cast",
     description:
-      "EVL's powerful standard library of mathematical and conversion functions.",
+      "EVAL's powerful standard library of mathematical and conversion functions.",
     difficulty: "Intermediate",
     icon: <Zap size={16} />,
     accentColor: "#38bdf8",
@@ -453,7 +453,7 @@ const LESSONS: Lesson[] = [
     sections: [
       {
         heading: "What is a Function?",
-        body: `A function is a named operation that takes in one or more values (called arguments), does something with them, and gives back a result. Think of it like a machine — you put something in, and get something useful out.\n\nEVL provides several built-in functions so you don't have to write these from scratch.`,
+        body: `A function is a named operation that takes in one or more values (called arguments), does something with them, and gives back a result. Think of it like a machine — you put something in, and get something useful out.\n\nEVAL provides several built-in functions so you don't have to write these from scratch.`,
       },
       {
         heading: "pow — Raise to a Power",
@@ -499,7 +499,7 @@ const LESSONS: Lesson[] = [
       },
       {
         heading: "cast — Explicit Type Conversion",
-        body: `cast(value, type) converts a value from one type to another explicitly. While EVL does implicit conversion automatically in most cases, sometimes you want to be deliberate and clear about converting types.`,
+        body: `cast(value, type) converts a value from one type to another explicitly. While EVAL does implicit conversion automatically in most cases, sometimes you want to be deliberate and clear about converting types.`,
         codeBlocks: [
           {
             label: "Using cast",
@@ -529,11 +529,11 @@ const LESSONS: Lesson[] = [
             code: `print("Hello, World!")\n\nint score = 42\nprint("Your score:", score)\n\nfloat temp = 98.6\nprint("Temperature:", temp, "degrees")`,
           },
         ],
-        tip: 'Strings in EVL are wrapped in double quotes ("). Everything inside the quotes is treated as text, including numbers — "42" is text, not a number.',
+        tip: 'Strings in EVAL are wrapped in double quotes ("). Everything inside the quotes is treated as text, including numbers — "42" is text, not a number.',
       },
       {
         heading: "Printing Multiple Values",
-        body: `You can pass multiple values to print separated by commas. EVL will print them all on one line with spaces between them.`,
+        body: `You can pass multiple values to print separated by commas. EVAL will print them all on one line with spaces between them.`,
         codeBlocks: [
           {
             label: "Multiple values",
@@ -561,7 +561,7 @@ const LESSONS: Lesson[] = [
       },
       {
         heading: "try / catch Blocks",
-        body: `EVL uses try and catch to handle errors. The code inside try is the risky operation. If it fails, execution jumps immediately to the catch block instead of crashing.`,
+        body: `EVAL uses try and catch to handle errors. The code inside try is the risky operation. If it fails, execution jumps immediately to the catch block instead of crashing.`,
         codeBlocks: [
           {
             label: "Basic try/catch",
@@ -595,12 +595,12 @@ const LESSONS: Lesson[] = [
     topics: ["Mixed programs", "Best practices", "Readable code"],
     sections: [
       {
-        heading: "A Complete EVL Program",
+        heading: "A Complete EVAL Program",
         body: `Let's build a real program that uses everything we've learned — variables, built-in constants, math functions, print, and error handling.`,
         codeBlocks: [
           {
             label: "Circle calculator",
-            code: `// Circle Calculator in EVL\nconst int precision = 2\n\nfloat radius = 7.5\n\n// Area = π * r²\nfloat area = PI * pow(radius, 2)\nfloat rounded_area = round(area)\n\n// Circumference = 2π * r\nfloat circumference = 2 * PI * radius\n\nprint("Radius:", radius)\nprint("Area (approx):", rounded_area)\nprint("Circumference:", circumference)`,
+            code: `// Circle Calculator in EVAL\nconst int precision = 2\n\nfloat radius = 7.5\n\n// Area = π * r²\nfloat area = PI * pow(radius, 2)\nfloat rounded_area = round(area)\n\n// Circumference = 2π * r\nfloat circumference = 2 * PI * radius\n\nprint("Radius:", radius)\nprint("Area (approx):", rounded_area)\nprint("Circumference:", circumference)`,
           },
         ],
       },
@@ -688,7 +688,7 @@ function SectionBlock({ section }: { section: Section }) {
           {section.tip && <NoteBox text={section.tip} type="tip" />}
 
           {section.codeBlocks?.map((cb, i) => (
-            <EVLCode key={i} code={cb.code} label={cb.label} />
+            <EVALCode key={i} code={cb.code} label={cb.label} />
           ))}
         </Box>
       )}
@@ -813,7 +813,7 @@ function LessonView({
                 letterSpacing="0.12em"
                 fontWeight="700"
               >
-                EVL — {lesson.subtitle.toUpperCase()}
+                EVAL — {lesson.subtitle.toUpperCase()}
               </Text>
               <Text
                 fontSize="10px"
@@ -1037,7 +1037,7 @@ export const LearnPage = () => {
     const firstCode =
       lesson.sections.find((s) => s.codeBlocks?.length)?.codeBlocks?.[0]
         ?.code ?? "";
-    navigate("/", { state: { code: firstCode, language: "evl" } });
+    navigate("/", { state: { code: firstCode, language: "eval" } });
   };
 
   // ── Lesson detail ──
@@ -1099,7 +1099,7 @@ export const LearnPage = () => {
                 letterSpacing="0.12em"
                 fontWeight="700"
               >
-                EVL LANGUAGE
+                EVAL LANGUAGE
               </Text>
             </Flex>
           </Box>
@@ -1122,7 +1122,7 @@ export const LearnPage = () => {
           lineHeight="1.15"
           mb="10px"
         >
-          Learn EVL
+          Learn EVAL
         </Text>
 
         <Text
@@ -1132,7 +1132,7 @@ export const LearnPage = () => {
           maxW="560px"
           lineHeight="1.7"
         >
-          A complete guide to the EVL programming language — from your very
+          A complete guide to the EVAL programming language — from your very
           first variable to error handling and beyond. Every lesson is designed
           for beginners with real examples and clear explanations.
         </Text>
