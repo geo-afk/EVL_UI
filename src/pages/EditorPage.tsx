@@ -127,7 +127,9 @@ export const EditorPage = () => {
 
   const leftPanel = (
     <StackedPanes
-      top={<OutputPanel result={null} isRunning={false} onClear={onClear} />}
+      top={
+        <OutputPanel result={runResult} isRunning={false} onClear={onClear} />
+      }
       bottom={
         <AIPanel
           result={aiResult}
