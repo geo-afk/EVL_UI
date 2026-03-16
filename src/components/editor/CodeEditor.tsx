@@ -31,6 +31,7 @@ interface CodeEditorProps {
   onAIRun: () => void;
   onAIInsights: () => void;
   isAILoading: boolean;
+  isRunning?: boolean;
 }
 
 // ─── Main Editor ──────────────────────────────────────────────────────────────
@@ -41,6 +42,7 @@ export const CodeEditor = ({
   onAIRun,
   onAIInsights,
   isAILoading,
+  isRunning = false,
 }: CodeEditorProps) => {
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof Monaco | null>(null);
@@ -136,7 +138,10 @@ export const CodeEditor = ({
     // ── Inline completions provider ───────────────────────────────────────
     // Returns whatever was prefetched by the debounce above
     monaco.languages.registerInlineCompletionsProvider(EVAL_LANGUAGE_ID, {
-      provideInlineCompletions: (_model: Monaco.editor.ITextModel, position: Monaco.Position) => {
+      provideInlineCompletions: (
+        _model: Monaco.editor.ITextModel,
+        position: Monaco.Position,
+      ) => {
         const completion = pendingCompletion.current;
         if (!completion) return { items: [] };
 
@@ -229,7 +234,7 @@ export const CodeEditor = ({
         {/* AI Run Button */}
         <button
           onClick={onAIRun}
-          disabled={isAILoading}
+          disabled={isAILoading || isRunning || !code.trim()}
           title="Ask AI to simulate running this code"
           style={{
             display: "flex",
@@ -244,10 +249,10 @@ export const CodeEditor = ({
             color: isAILoading ? "var(--text-muted)" : "var(--accent)",
             fontSize: "12px",
             fontWeight: "600",
-            cursor: isAILoading ? "not-allowed" : "pointer",
+            cursor: isAILoading || isRunning ? "not-allowed" : "pointer",
             letterSpacing: "0.04em",
             transition: "all 0.15s ease",
-            opacity: isAILoading ? 0.6 : 1,
+            opacity: isAILoading || isRunning ? 0.6 : 1,
             fontFamily: "'JetBrains Mono', 'Courier New', monospace",
           }}
           onMouseEnter={(e) => {
@@ -364,7 +369,18 @@ export const CodeEditor = ({
         >
           · Ctrl+Enter to run
         </Text>
-      </Flex>{" "}
+        {isRunning && (
+          <Text
+            fontSize="10px"
+            color="var(--accent)"
+            fontFamily="monospace"
+            letterSpacing="0.05em"
+          >
+            · running...
+          </Text>
+        )}
+      </Flex>
     </Flex>
   );
 };
+
