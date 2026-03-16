@@ -1,4 +1,6 @@
-const AI_BASE = "http://localhost:8000/api/ai";
+import { AnalysisResponse } from "./model/models";
+
+const AI_BASE = "http://localhost:8000";
 
 export async function fetchAIInsights(
   code: string,
@@ -30,7 +32,7 @@ export async function fetchAIComplete(
 }
 
 export async function fetchRunCode(code: string): Promise<AnalysisResponse> {
-  const res = await fetch(`${BASE}/run_code`, {
+  const res = await fetch(`${AI_BASE}/run_code`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code }),
@@ -41,4 +43,3 @@ export async function fetchRunCode(code: string): Promise<AnalysisResponse> {
   }
   return res.json();
 }
-
