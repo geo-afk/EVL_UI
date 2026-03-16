@@ -8,7 +8,7 @@ import {
 } from "@monaco-editor/react";
 import * as Monaco from "monaco-editor";
 import { useRef, useState } from "react";
-import { Play, Cpu } from "lucide-react";
+import { Play, Cpu, AlertCircle } from "lucide-react";
 import { setup_eval, updateDiagnostics } from "../../eval/lsp/setup";
 import { retrieveCodeDiagnostics } from "../../eval/lsp/validator";
 import { EVAL_LANGUAGE_ID } from "../../model/models";
@@ -95,14 +95,16 @@ export const CodeEditor = ({
       const model = editor.getModel();
       if (model) {
         const markers = monaco.editor.getModelMarkers({ resource: model.uri });
-        const err = markers.filter(
+
+        const errCount = markers.filter(
           (m: { severity: any }) => m.severity === monaco.MarkerSeverity.Error,
-        );
-        const warnings = markers.filter(
+        ).length;
+
+        const warnCount = markers.filter(
           (m: { severity: any }) =>
             m.severity === monaco.MarkerSeverity.Warning,
-        );
-        setErrors(err.length + warnings.length);
+        ).length;
+        setErrors(errCount + warnCount);
       }
 
       // Debounce: cancel any previous pending request then schedule a new one
@@ -195,79 +197,92 @@ export const CodeEditor = ({
         {/* Run Button */}
         <button
           onClick={onRun}
+          disabled={errors > 0 || isRunning || !code.trim()}
           title="Run code (Ctrl+Enter)"
           style={{
             display: "flex",
             alignItems: "center",
             gap: "6px",
             padding: "5px 14px",
-            background: "#16301a",
-            border: "1px solid #22543d",
+            background: errors > 0 ? "#2d1a1a" : "#16301a",
+            border: `1px solid ${errors > 0 ? "#7f1d1d" : "#22543d"}`,
             borderRadius: "6px",
-            color: "#4ade80",
+            color: errors > 0 ? "#f87171" : "#4ade80",
             fontSize: "12px",
             fontWeight: "600",
-            cursor: "pointer",
+            cursor: errors > 0 || isRunning ? "not-allowed" : "pointer",
             letterSpacing: "0.04em",
             transition: "all 0.15s ease",
+            opacity: isRunning ? 0.7 : 1,
             fontFamily: "'JetBrains Mono', 'Courier New', monospace",
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "#1a3d20";
-            (e.currentTarget as HTMLButtonElement).style.borderColor =
-              "#2d6a4f";
+            if (errors > 0 || isRunning) return;
+            const b = e.currentTarget as HTMLButtonElement;
+            b.style.background = "#1a3d20";
+            b.style.borderColor = "#2d6a4f";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "#16301a";
-            (e.currentTarget as HTMLButtonElement).style.borderColor =
-              "#22543d";
+            const b = e.currentTarget as HTMLButtonElement;
+            b.style.background = errors > 0 ? "#2d1a1a" : "#16301a";
+            b.style.borderColor = errors > 0 ? "#7f1d1d" : "#22543d";
           }}
         >
           {" "}
-          <Play size={12} fill="#4ade80" />
-          {errors ? "RUN" : "NO"}
+          {errors > 0 ? (
+            <AlertCircle size={12} fill="#f87171" color="#f87171" />
+          ) : isRunning ? (
+            <Cpu size={12} color="#4ade80" style={{ opacity: 0.7 }} />
+          ) : (
+            <Play size={12} fill="#4ade80" color="#4ade80" />
+          )}
+          {errors > 0
+            ? `FIX: ${errors} error${errors === 1 ? "" : "s"}`
+            : isRunning
+              ? "Running..."
+              : "Run code (Ctrl+Enter)"}{" "}
         </button>
 
         {/* Divider */}
         <Box w="1px" h="20px" bg="#2a2a38" />
 
         {/* AI Run Button */}
-        <button
-          onClick={onAIRun}
-          disabled={isAILoading || isRunning || !code.trim()}
-          title="Ask AI to simulate running this code"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "5px 14px",
-            background: isAILoading ? "var(--bg-surface)" : "var(--accent-dim)",
-            border: `1px solid ${
-              isAILoading ? "var(--border)" : "var(--accent-border)"
-            }`,
-            borderRadius: "6px",
-            color: isAILoading ? "var(--text-muted)" : "var(--accent)",
-            fontSize: "12px",
-            fontWeight: "600",
-            cursor: isAILoading || isRunning ? "not-allowed" : "pointer",
-            letterSpacing: "0.04em",
-            transition: "all 0.15s ease",
-            opacity: isAILoading || isRunning ? 0.6 : 1,
-            fontFamily: "'JetBrains Mono', 'Courier New', monospace",
-          }}
-          onMouseEnter={(e) => {
-            if (!isAILoading)
-              (e.currentTarget as HTMLButtonElement).style.filter =
-                "brightness(1.2)";
-          }}
-          onMouseLeave={(e) => {
-            if (!isAILoading)
-              (e.currentTarget as HTMLButtonElement).style.filter = "";
-          }}
-        >
-          <Cpu size={12} />
-          AI RUN
-        </button>
+        {/* <button */}
+        {/*   onClick={onAIRun} */}
+        {/*   disabled={isAILoading || isRunning || !code.trim()} */}
+        {/*   title="Ask AI to simulate running this code" */}
+        {/*   style={{ */}
+        {/*     display: "flex", */}
+        {/*     alignItems: "center", */}
+        {/*     gap: "6px", */}
+        {/*     padding: "5px 14px", */}
+        {/*     background: isAILoading ? "var(--bg-surface)" : "var(--accent-dim)", */}
+        {/*     border: `1px solid ${ */}
+        {/*       isAILoading ? "var(--border)" : "var(--accent-border)" */}
+        {/*     }`, */}
+        {/*     borderRadius: "6px", */}
+        {/*     color: isAILoading ? "var(--text-muted)" : "var(--accent)", */}
+        {/*     fontSize: "12px", */}
+        {/*     fontWeight: "600", */}
+        {/*     cursor: isAILoading || isRunning ? "not-allowed" : "pointer", */}
+        {/*     letterSpacing: "0.04em", */}
+        {/*     transition: "all 0.15s ease", */}
+        {/*     opacity: isAILoading || isRunning ? 0.6 : 1, */}
+        {/*     fontFamily: "'JetBrains Mono', 'Courier New', monospace", */}
+        {/*   }} */}
+        {/*   onMouseEnter={(e) => { */}
+        {/*     if (!isAILoading) */}
+        {/*       (e.currentTarget as HTMLButtonElement).style.filter = */}
+        {/*         "brightness(1.2)"; */}
+        {/*   }} */}
+        {/*   onMouseLeave={(e) => { */}
+        {/*     if (!isAILoading) */}
+        {/*       (e.currentTarget as HTMLButtonElement).style.filter = ""; */}
+        {/*   }} */}
+        {/* > */}
+        {/*   <Cpu size={12} /> */}
+        {/*   AI RUN */}
+        {/* </button> */}
 
         {/* AI Insights Button */}
         <button
@@ -383,4 +398,3 @@ export const CodeEditor = ({
     </Flex>
   );
 };
-
