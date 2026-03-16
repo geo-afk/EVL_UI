@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
 import { Box, Flex, Text } from "@chakra-ui/react";
-import { Code2, BookOpen, Palette, ChevronDown } from "lucide-react";
-import {EditorPage} from "./pages/EditorPage";
+import { Code2, BookOpen, Palette, ChevronDown, Bug } from "lucide-react";
+import { EditorPage } from "./pages/EditorPage";
 import { LearnPage } from "./pages/LearnPage";
 import { AppThemeProvider, useAppTheme } from "./theme/ThemeContext";
+import { DebuggerPage } from "./pages/DebuggerPage";
 
 // ─── Nav Item ─────────────────────────────────────────────────────────────────
 const NavItem = ({
@@ -285,6 +286,7 @@ function AppInner() {
           <Flex gap="4px">
             <NavItem to="/" icon={Code2} label="Editor" />
             <NavItem to="/learn" icon={BookOpen} label="Learn" />
+            <NavItem to="/debug" icon={Bug} label="Debugger" />
           </Flex>
 
           {/* Theme switcher */}
@@ -296,6 +298,7 @@ function AppInner() {
           <Routes>
             <Route path="/" element={<EditorPage />} />
             <Route path="/learn" element={<LearnPage />} />
+            <Route path="/debug" element={<DebuggerPage />} />
           </Routes>
         </Box>
       </Flex>
