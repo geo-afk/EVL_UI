@@ -18,10 +18,15 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
-        run: npm ci
+        timeout-minutes: 10
+        run: |
+          for i in 1 2 3; do
+            npm ci && break || echo "Attempt $i failed, retrying..."
+            sleep 10
+          done
 
       - name: Build frontend
         run: npm run build
