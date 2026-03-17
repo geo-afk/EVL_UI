@@ -1,6 +1,6 @@
 import { AnalysisResponse } from "./model/models";
 
-const AI_BASE = "http://localhost:8000";
+const AI_BASE = "/api/ai";
 
 export async function fetchAIInsights(
   code: string,
