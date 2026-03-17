@@ -32,7 +32,7 @@ export async function fetchAIComplete(
 }
 
 export async function fetchRunCode(code: string): Promise<AnalysisResponse> {
-  const res = await fetch(`${AI_BASE}/run_code`, {
+  const res = await fetch(`/run_code`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code }),
