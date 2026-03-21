@@ -7,8 +7,8 @@ import {
   type OnValidate,
 } from "@monaco-editor/react";
 import * as Monaco from "monaco-editor";
-import { useRef, useState } from "react";
-import { Play, Cpu, AlertCircle } from "lucide-react";
+import { useRef, useState, useCallback } from "react";
+import { Play, Cpu, AlertCircle, Download, Upload, TriangleAlert, X, Wrench } from "lucide-react";
 import { setup_eval, updateDiagnostics } from "../../eval/lsp/setup";
 import { retrieveCodeDiagnostics } from "../../eval/lsp/validator";
 import { EVAL_LANGUAGE_ID } from "../../model/models";
@@ -34,6 +34,287 @@ interface CodeEditorProps {
   isRunning?: boolean;
 }
 
+// ─── Import/Export Feedback Toast ─────────────────────────────────────────────
+type ToastState = { message: string; kind: "success" | "error" } | null;
+
+const Toast = ({ toast }: { toast: ToastState }) => {
+  if (!toast) return null;
+  const isError = toast.kind === "error";
+  return (
+    <Box
+      position="absolute"
+      bottom="36px"
+      left="50%"
+      style={{ transform: "translateX(-50%)", animation: "toastIn 0.2s ease" }}
+      zIndex={999}
+      px="14px"
+      py="8px"
+      borderRadius="6px"
+      bg={isError ? "#1a0808" : "#081a0e"}
+      border={`1px solid ${isError ? "#5a1e1e" : "#1e5a30"}`}
+      boxShadow={`0 4px 20px ${isError ? "#f8717130" : "#4ade8030"}`}
+      pointerEvents="none"
+      whiteSpace="nowrap"
+    >
+      <Text
+        fontSize="11.5px"
+        color={isError ? "#f87171" : "#4ade80"}
+        fontFamily="'JetBrains Mono', 'Courier New', monospace"
+        fontWeight="600"
+        letterSpacing="0.04em"
+      >
+        {toast.message}
+      </Text>
+    </Box>
+  );
+};
+
+// ─── Export Error Dialog ──────────────────────────────────────────────────────
+interface ExportErrorDialogProps {
+  errorCount: number;
+  onFix: () => void;
+  onExportAnyway: () => void;
+  onCancel: () => void;
+}
+
+const ExportErrorDialog = ({
+  errorCount,
+  onFix,
+  onExportAnyway,
+  onCancel,
+}: ExportErrorDialogProps) => (
+  <>
+    {/* Backdrop */}
+    <Box
+      position="fixed"
+      inset="0"
+      zIndex={1000}
+      bg="rgba(0,0,0,0.6)"
+      style={{ animation: "backdropIn 0.15s ease", backdropFilter: "blur(2px)" }}
+      onClick={onCancel}
+    />
+
+    {/* Dialog */}
+    <Box
+      position="fixed"
+      top="50%"
+      left="50%"
+      zIndex={1001}
+      style={{ transform: "translate(-50%, -50%)", animation: "dialogIn 0.18s ease" }}
+      bg="var(--bg-panel)"
+      border="1px solid #5a1e1e"
+      borderRadius="10px"
+      boxShadow="0 24px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(248,113,113,0.08)"
+      w="340px"
+      overflow="hidden"
+    >
+      {/* Header stripe */}
+      <Box h="3px" bg="linear-gradient(90deg, #f87171, #fb923c)" />
+
+      {/* Content */}
+      <Box p="20px">
+        {/* Title row */}
+        <Flex align="flex-start" gap="12px" mb="14px">
+          <Box
+            w="32px"
+            h="32px"
+            borderRadius="8px"
+            bg="#2d1a1a"
+            border="1px solid #5a1e1e"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            flexShrink={0}
+          >
+            <TriangleAlert size={15} color="#f87171" />
+          </Box>
+          <Box>
+            <Text
+              fontSize="13px"
+              fontWeight="700"
+              color="var(--text-primary)"
+              fontFamily="'JetBrains Mono', monospace"
+              letterSpacing="0.03em"
+              mb="4px"
+            >
+              Export with errors?
+            </Text>
+            <Text fontSize="12px" color="var(--text-secondary)" lineHeight="1.6">
+              Your code has{" "}
+              <Text as="span" color="#f87171" fontWeight="600">
+                {errorCount} {errorCount === 1 ? "error" : "errors"}
+              </Text>
+              . Exporting now will save a broken file.
+            </Text>
+          </Box>
+
+          {/* Close X */}
+          <button
+            onClick={onCancel}
+            style={{
+              marginLeft: "auto",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--text-ghost)",
+              padding: "2px",
+              display: "flex",
+              flexShrink: 0,
+              transition: "color 0.15s",
+            }}
+            onMouseEnter={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.color =
+                "var(--text-muted)")
+            }
+            onMouseLeave={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.color =
+                "var(--text-ghost)")
+            }
+          >
+            <X size={14} />
+          </button>
+        </Flex>
+
+        {/* Action buttons */}
+        <Flex gap="8px">
+          {/* Fix errors — primary */}
+          <button
+            onClick={onFix}
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "7px",
+              padding: "8px 14px",
+              background: "#16301a",
+              border: "1px solid #22543d",
+              borderRadius: "7px",
+              color: "#4ade80",
+              fontSize: "12px",
+              fontWeight: "700",
+              cursor: "pointer",
+              letterSpacing: "0.04em",
+              fontFamily: "'JetBrains Mono', monospace",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              const b = e.currentTarget as HTMLButtonElement;
+              b.style.background = "#1a3d20";
+              b.style.borderColor = "#2d6a4f";
+            }}
+            onMouseLeave={(e) => {
+              const b = e.currentTarget as HTMLButtonElement;
+              b.style.background = "#16301a";
+              b.style.borderColor = "#22543d";
+            }}
+          >
+            <Wrench size={12} />
+            Fix errors
+          </button>
+
+          {/* Export anyway — destructive secondary */}
+          <button
+            onClick={onExportAnyway}
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "7px",
+              padding: "8px 14px",
+              background: "#2d1a1a",
+              border: "1px solid #7f1d1d",
+              borderRadius: "7px",
+              color: "#f87171",
+              fontSize: "12px",
+              fontWeight: "600",
+              cursor: "pointer",
+              letterSpacing: "0.04em",
+              fontFamily: "'JetBrains Mono', monospace",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              const b = e.currentTarget as HTMLButtonElement;
+              b.style.background = "#3d1a1a";
+              b.style.borderColor = "#b91c1c";
+            }}
+            onMouseLeave={(e) => {
+              const b = e.currentTarget as HTMLButtonElement;
+              b.style.background = "#2d1a1a";
+              b.style.borderColor = "#7f1d1d";
+            }}
+          >
+            <Download size={12} />
+            Export anyway
+          </button>
+        </Flex>
+      </Box>
+    </Box>
+
+    <style>{`
+      @keyframes backdropIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+      @keyframes dialogIn {
+        from { opacity: 0; transform: translate(-50%, -52%) scale(0.97); }
+        to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      }
+    `}</style>
+  </>
+);
+
+// ─── Toolbar Icon Button ──────────────────────────────────────────────────────
+const ToolbarIconBtn = ({
+  icon: Icon,
+  title,
+  onClick,
+  disabled = false,
+}: {
+  icon: React.ElementType;
+  title: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    title={title}
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "30px",
+      height: "30px",
+      background: "transparent",
+      border: "1px solid transparent",
+      borderRadius: "6px",
+      color: disabled ? "var(--text-ghost)" : "var(--text-secondary)",
+      cursor: disabled ? "not-allowed" : "pointer",
+      transition: "all 0.15s ease",
+      flexShrink: 0,
+      opacity: disabled ? 0.4 : 1,
+    }}
+    onMouseEnter={(e) => {
+      if (disabled) return;
+      const b = e.currentTarget as HTMLButtonElement;
+      b.style.background = "var(--bg-elevated)";
+      b.style.borderColor = "var(--border)";
+      b.style.color = "var(--text-primary)";
+    }}
+    onMouseLeave={(e) => {
+      if (disabled) return;
+      const b = e.currentTarget as HTMLButtonElement;
+      b.style.background = "transparent";
+      b.style.borderColor = "transparent";
+      b.style.color = "var(--text-secondary)";
+    }}
+  >
+    <Icon size={14} />
+  </button>
+);
+
 // ─── Main Editor ──────────────────────────────────────────────────────────────
 export const CodeEditor = ({
   code,
@@ -46,7 +327,11 @@ export const CodeEditor = ({
 }: CodeEditorProps) => {
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof Monaco | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<number>(0);
+  const [toast, setToast] = useState<ToastState>(null);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeTheme, setActiveTheme] = useState<EditorTheme>(() => {
     const savedId = localStorage.getItem("editorThemeId");
     return (
@@ -59,6 +344,91 @@ export const CodeEditor = ({
   const autocompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Latest pending inline completion so the provider can read it synchronously
   const pendingCompletion = useRef<string>("");
+
+  // ─── Toast helper ──────────────────────────────────────────────────────────
+  const showToast = useCallback(
+    (message: string, kind: "success" | "error") => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      setToast({ message, kind });
+      toastTimer.current = setTimeout(() => setToast(null), 2800);
+    },
+    [],
+  );
+
+  // ─── Export (core) ────────────────────────────────────────────────────────
+  const doExport = useCallback(() => {
+    const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "program.eval";
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("Exported as program.eval", "success");
+  }, [code, showToast]);
+
+  // ─── Export (entry — checks errors first) ────────────────────────────────
+  const handleExport = useCallback(() => {
+    if (!code.trim()) {
+      showToast("Nothing to export — editor is empty", "error");
+      return;
+    }
+    if (errors > 0) {
+      setShowExportDialog(true);
+      return;
+    }
+    doExport();
+  }, [code, errors, doExport, showToast]);
+
+  const handleExportAnyway = useCallback(() => {
+    setShowExportDialog(false);
+    doExport();
+  }, [doExport]);
+
+  const handleFixErrors = useCallback(() => {
+    setShowExportDialog(false);
+    // Focus the editor so the user can start fixing immediately
+    editorRef.current?.focus();
+  }, []);
+
+  // ─── Import (trigger picker) ───────────────────────────────────────────────
+  const handleImportClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  // ─── Import (handle file selection) ───────────────────────────────────────
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Always reset so the same file can be re-imported if needed
+      e.target.value = "";
+
+      if (!file) return;
+
+      // Extension validation
+      if (!file.name.toLowerCase().endsWith(".eval")) {
+        showToast(
+          `"${file.name}" is not a .eval file — import rejected`,
+          "error",
+        );
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const content = ev.target?.result;
+        if (typeof content !== "string") {
+          showToast("Failed to read file", "error");
+          return;
+        }
+        onCodeChange(content);
+        showToast(`Imported ${file.name}`, "success");
+      };
+      reader.onerror = () => showToast("Failed to read file", "error");
+      reader.readAsText(file);
+    },
+    [onCodeChange, showToast],
+  );
 
   const handleThemeSelect = (theme: EditorTheme) => {
     setActiveTheme(theme);
@@ -97,11 +467,11 @@ export const CodeEditor = ({
         const markers = monaco.editor.getModelMarkers({ resource: model.uri });
 
         const errCount = markers.filter(
-          (m: { severity: any }) => m.severity === monaco.MarkerSeverity.Error,
+          (m: Monaco.editor.IMarker) => m.severity === monaco.MarkerSeverity.Error,
         ).length;
 
         const warnCount = markers.filter(
-          (m: { severity: any }) =>
+          (m: Monaco.editor.IMarker) =>
             m.severity === monaco.MarkerSeverity.Warning,
         ).length;
         setErrors(errCount + warnCount);
@@ -176,7 +546,26 @@ export const CodeEditor = ({
   const handleEditorValidation: OnValidate = () => {};
 
   return (
-    <Flex direction="column" h="100%" bg="var(--bg-base)">
+    <Flex direction="column" h="100%" bg="var(--bg-base)" position="relative">
+      {/* Hidden file input for import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".eval"
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+      />
+
+      {/* Export error confirmation dialog */}
+      {showExportDialog && (
+        <ExportErrorDialog
+          errorCount={errors}
+          onFix={handleFixErrors}
+          onExportAnyway={handleExportAnyway}
+          onCancel={() => setShowExportDialog(false)}
+        />
+      )}
+
       {/* Editor Toolbar */}
       <Flex
         h="44px"
@@ -190,6 +579,21 @@ export const CodeEditor = ({
         <ThemeDropdown
           currentTheme={activeTheme}
           onSelect={handleThemeSelect}
+        />
+
+        {/* Import / Export buttons */}
+        <Box w="1px" h="20px" bg="var(--border-subtle)" flexShrink={0} />
+
+        <ToolbarIconBtn
+          icon={Upload}
+          title="Import .eval file"
+          onClick={handleImportClick}
+        />
+        <ToolbarIconBtn
+          icon={Download}
+          title="Export as .eval file"
+          onClick={handleExport}
+          disabled={!code.trim()}
         />
 
         <Box flex="1" />
@@ -228,7 +632,6 @@ export const CodeEditor = ({
             b.style.borderColor = errors > 0 ? "#7f1d1d" : "#22543d";
           }}
         >
-          {" "}
           {errors > 0 ? (
             <AlertCircle size={12} fill="#f87171" color="#f87171" />
           ) : isRunning ? (
@@ -240,7 +643,7 @@ export const CodeEditor = ({
             ? `FIX: ${errors} error${errors === 1 ? "" : "s"}`
             : isRunning
               ? "Running..."
-              : "Run code (Ctrl+Enter)"}{" "}
+              : "Run code (Ctrl+Enter)"}
         </button>
 
         {/* Divider */}
@@ -285,6 +688,8 @@ export const CodeEditor = ({
         {/* </button> */}
 
         {/* AI Insights Button */}
+
+        {/* AI Insights Button */}
         <button
           onClick={onAIInsights}
           disabled={isAILoading}
@@ -324,6 +729,7 @@ export const CodeEditor = ({
           AI INSIGHTS
         </button>
       </Flex>
+
       {/* Monaco Editor */}
       <Box flex="1" overflow="hidden">
         <Editor
@@ -368,6 +774,7 @@ export const CodeEditor = ({
           }}
         />
       </Box>
+
       {/* Bottom status bar */}
       <Flex
         h="24px"
@@ -375,6 +782,7 @@ export const CodeEditor = ({
         px="14px"
         borderTop="1px solid var(--border)"
         flexShrink={0}
+        gap="8px"
       >
         <Text
           fontSize="10px"
@@ -395,6 +803,16 @@ export const CodeEditor = ({
           </Text>
         )}
       </Flex>
+
+      {/* Toast notification */}
+      <Toast toast={toast} />
+
+      <style>{`
+        @keyframes toastIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
     </Flex>
   );
 };
