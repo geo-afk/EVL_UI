@@ -8,7 +8,8 @@ import {
 } from "@monaco-editor/react";
 import * as Monaco from "monaco-editor";
 import { useRef, useState, useCallback } from "react";
-import { Play, Cpu, AlertCircle, Download, Upload, TriangleAlert, X, Wrench } from "lucide-react";
+import { Play, Cpu, AlertCircle, Download, Upload, TriangleAlert, X, Wrench, BookOpen, Link, Check } from "lucide-react";
+import { ReferencePanel } from "./ReferencePanel";
 import { setup_eval, updateDiagnostics } from "../../eval/lsp/setup";
 import { retrieveCodeDiagnostics } from "../../eval/lsp/validator";
 import { EVAL_LANGUAGE_ID } from "../../model/models";
@@ -32,6 +33,11 @@ interface CodeEditorProps {
   onAIInsights: () => void;
   isAILoading: boolean;
   isRunning?: boolean;
+  onShare: () => void;
+  onEditorMount?: (
+    monaco: typeof Monaco,
+    editor: Monaco.editor.IStandaloneCodeEditor,
+  ) => void;
 }
 
 // ─── Import/Export Feedback Toast ─────────────────────────────────────────────
@@ -324,6 +330,8 @@ export const CodeEditor = ({
   onAIInsights,
   isAILoading,
   isRunning = false,
+  onShare,
+  onEditorMount,  
 }: CodeEditorProps) => {
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof Monaco | null>(null);
@@ -331,6 +339,8 @@ export const CodeEditor = ({
   const [errors, setErrors] = useState<number>(0);
   const [toast, setToast] = useState<ToastState>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showRef,      setShowRef]      = useState(false);
+  const [shareCopied,  setShareCopied]  = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeTheme, setActiveTheme] = useState<EditorTheme>(() => {
     const savedId = localStorage.getItem("editorThemeId");
@@ -445,6 +455,7 @@ export const CodeEditor = ({
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+    onEditorMount?.(monaco, editor);
     editor.focus();
 
     // Register all themes now that monaco is available
@@ -455,6 +466,17 @@ export const CodeEditor = ({
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       onRun();
     });
+
+    // Custom keybinding: Ctrl+? to toggle quick reference
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Slash, () => {
+      setShowRef((v) => !v);
+    });
+
+    // Custom keybinding: Ctrl+Shift+S to share
+    editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyS,
+      () => { onShare(); },
+    );
 
     // ── Diagnostics + debounced autocomplete prefetch ─────────────────────
     editor.onDidChangeModelContent(() => {
@@ -595,6 +617,88 @@ export const CodeEditor = ({
           onClick={handleExport}
           disabled={!code.trim()}
         />
+
+        {/* Quick Reference toggle */}
+        <Box w="1px" h="20px" bg="var(--border-subtle)" flexShrink={0} />
+        <button
+          onClick={() => setShowRef((v) => !v)}
+          title="Quick Reference (Ctrl+/)"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "30px",
+            height: "30px",
+            background: showRef ? "var(--accent-dim)" : "transparent",
+            border: `1px solid ${showRef ? "var(--accent-border)" : "transparent"}`,
+            borderRadius: "6px",
+            color: showRef ? "var(--accent)" : "var(--text-secondary)",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            const b = e.currentTarget as HTMLButtonElement;
+            if (!showRef) {
+              b.style.background  = "var(--bg-elevated)";
+              b.style.borderColor = "var(--border)";
+              b.style.color       = "var(--text-primary)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            const b = e.currentTarget as HTMLButtonElement;
+            if (!showRef) {
+              b.style.background  = "transparent";
+              b.style.borderColor = "transparent";
+              b.style.color       = "var(--text-secondary)";
+            }
+          }}
+        >
+          <BookOpen size={14} />
+        </button>
+
+        {/* Share button */}
+        <button
+          onClick={() => {
+            onShare();
+            setShareCopied(true);
+            setTimeout(() => setShareCopied(false), 2200);
+          }}
+          disabled={!code.trim()}
+          title="Copy shareable link (Ctrl+Shift+S)"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "5px",
+            width: "30px",
+            height: "30px",
+            background: shareCopied ? "rgba(74,222,128,0.1)" : "transparent",
+            border: `1px solid ${shareCopied ? "rgba(74,222,128,0.35)" : "transparent"}`,
+            borderRadius: "6px",
+            color: shareCopied ? "#4ade80" : "var(--text-secondary)",
+            cursor: !code.trim() ? "not-allowed" : "pointer",
+            opacity: !code.trim() ? 0.4 : 1,
+            transition: "all 0.15s ease",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            if (!code.trim() || shareCopied) return;
+            const b = e.currentTarget as HTMLButtonElement;
+            b.style.background  = "var(--bg-elevated)";
+            b.style.borderColor = "var(--border)";
+            b.style.color       = "var(--text-primary)";
+          }}
+          onMouseLeave={(e) => {
+            if (shareCopied) return;
+            const b = e.currentTarget as HTMLButtonElement;
+            b.style.background  = "transparent";
+            b.style.borderColor = "transparent";
+            b.style.color       = "var(--text-secondary)";
+          }}
+        >
+          {shareCopied ? <Check size={14} /> : <Link size={14} />}
+        </button>
 
         <Box flex="1" />
 
@@ -775,6 +879,9 @@ export const CodeEditor = ({
         />
       </Box>
 
+      {/* Quick Reference Panel — slides in from the right over the editor */}
+      <ReferencePanel isOpen={showRef} onClose={() => setShowRef(false)} />
+
       {/* Bottom status bar */}
       <Flex
         h="24px"
@@ -790,7 +897,7 @@ export const CodeEditor = ({
           fontFamily="monospace"
           letterSpacing="0.05em"
         >
-          · Ctrl+Enter to run
+          · Ctrl+Enter to run · Ctrl+/ for reference · Ctrl+Shift+S to share
         </Text>
         {isRunning && (
           <Text
