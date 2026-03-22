@@ -121,17 +121,22 @@ function EmptyState({ onGoToEditor }: { onGoToEditor: () => void }) {
 // STEP TIMELINE (left column)
 // ─────────────────────────────────────────────────────────────────────────────
 
+interface StepTimelineProps{
+
+  steps: StepModel[];
+  activeIdx: number;
+  onSelect: (index: number) => void; 
+  errorLines: Set<number>;
+
+}
+
+
 function StepTimeline({
   steps,
   activeIdx,
   onSelect,
   errorLines,
-}: {
-  steps: StepModel[];
-  activeIdx: number;
-  onSelect: (i: number) => void;
-  errorLines: Set<number>;
-}) {
+}: StepTimelineProps) {
   const activeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -630,42 +635,16 @@ const SPEED_CONFIG: Record<PlaySpeed, { label: string; ms: number; color: string
 };
 const SPEED_ORDER: PlaySpeed[] = ["slow", "normal", "fast"];
 
-function NavBar({
-  activeIdx,
-  total,
-  isPlaying,
-  speed,
-  onPrev,
-  onNext,
-  onFirst,
-  onLast,
-  onTogglePlay,
-  onSpeedChange,
+function NavBtn({
+  onClick, disabled, children, title, accent = false,
 }: {
-  activeIdx: number;
-  total: number;
-  isPlaying: boolean;
-  speed: PlaySpeed;
-  onPrev: () => void;
-  onNext: () => void;
-  onFirst: () => void;
-  onLast: () => void;
-  onTogglePlay: () => void;
-  onSpeedChange: (s: PlaySpeed) => void;
+  onClick: () => void;
+  disabled: boolean;
+  children: React.ReactNode;
+  title: string;
+  accent?: boolean;
 }) {
-  const progress  = total > 1 ? (activeIdx / (total - 1)) * 100 : 100;
-  const atEnd     = activeIdx === total - 1;
-  const speedCfg  = SPEED_CONFIG[speed];
-
-  const NavBtn = ({
-    onClick, disabled, children, title, accent = false,
-  }: {
-    onClick: () => void;
-    disabled: boolean;
-    children: React.ReactNode;
-    title: string;
-    accent?: boolean;
-  }) => (
+  return (
     <button
       onClick={onClick}
       disabled={disabled}
@@ -701,12 +680,34 @@ function NavBar({
       {children}
     </button>
   );
+}
 
-  // Cycle through speed tiers on click
-  const cycleSpeed = () => {
-    const idx = SPEED_ORDER.indexOf(speed);
-    onSpeedChange(SPEED_ORDER[(idx + 1) % SPEED_ORDER.length]);
-  };
+function NavBar({
+  activeIdx,
+  total,
+  isPlaying,
+  speed,
+  onPrev,
+  onNext,
+  onFirst,
+  onLast,
+  onTogglePlay,
+  onSpeedChange,
+}: {
+  activeIdx: number;
+  total: number;
+  isPlaying: boolean;
+  speed: PlaySpeed;
+  onPrev: () => void;
+  onNext: () => void;
+  onFirst: () => void;
+  onLast: () => void;
+  onTogglePlay: () => void;
+  onSpeedChange: (s: PlaySpeed) => void;
+}) {
+  const progress  = total > 1 ? (activeIdx / (total - 1)) * 100 : 100;
+  const atEnd     = activeIdx === total - 1;
+  const speedCfg  = SPEED_CONFIG[speed];
 
   return (
     <Flex
@@ -861,10 +862,19 @@ export const DebuggerPage = () => {
   const [isPlaying,    setIsPlaying]    = useState(false);
   const [speed,        setSpeed]        = useState<PlaySpeed>("normal");
 
-  const steps    = session?.analysis.steps  ?? [];
-  const code     = session?.code            ?? "";
-  const errors   = session?.analysis.errors ?? [];
-  const warnings = session?.analysis.warnings ?? [];
+  const steps = useMemo(
+    () => session?.analysis.steps ?? [],
+    [session?.analysis.steps],
+  );
+  const code = session?.code ?? "";
+  const errors = useMemo(
+    () => session?.analysis.errors ?? [],
+    [session?.analysis.errors],
+  );
+  const warnings = useMemo(
+    () => session?.analysis.warnings ?? [],
+    [session?.analysis.warnings],
+  );
 
   // Set of line numbers that carry errors — used by source viewer + timeline
   const errorLines = useMemo(
@@ -874,7 +884,7 @@ export const DebuggerPage = () => {
 
   const clamp = useCallback(
     (i: number) => Math.max(0, Math.min(i, steps.length - 1)),
-    [steps.length],
+    [steps],
   );
   const goTo = useCallback((i: number) => setActiveIdx(clamp(i)), [clamp]);
 
@@ -1008,10 +1018,11 @@ export const DebuggerPage = () => {
               {(
                 [
                   { key: "variables", icon: <Database size={11} />, label: "VARIABLES",
-                    badge: Object.keys(currentScope).length || undefined },
+                    badge: Object.keys(currentScope).length || undefined, badgeGreen: false },
                   { key: "output",    icon: <Terminal size={11} />, label: "OUTPUT",
                     badge: activeStep.output.length || undefined, badgeGreen: true },
-                  { key: "detail",    icon: <Activity size={11} />, label: "DETAIL" },
+                  { key: "detail",    icon: <Activity size={11} />, label: "DETAIL",
+                    badge: undefined, badgeGreen: false },
                 ] as const
               ).map(({ key, icon, label, badge, badgeGreen }) => (
                 <button
