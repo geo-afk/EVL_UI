@@ -326,7 +326,6 @@ export const CodeEditor = ({
   code,
   onCodeChange,
   onRun,
-  onAIRun,
   onAIInsights,
   isAILoading,
   isRunning = false,
