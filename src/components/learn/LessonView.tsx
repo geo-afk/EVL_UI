@@ -1,8 +1,8 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { ChevronLeft, Clock, BookOpen } from "lucide-react";
 import { SectionBlock } from "./SectionBlock";
-import { DIFF_COLORS } from "./LessonCard";
 import { Lesson } from "@/data/lessons";
+import { DIFF_COLORS } from "@/util/lesson-helpers";
 
 
 type LessonViewProps = {
