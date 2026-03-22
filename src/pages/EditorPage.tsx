@@ -123,7 +123,7 @@ const handleEditorMount = useCallback(
   // Rehydrate panels from sessionStorage so output survives page navigation
   const [runResult,  setRunResult]  = useState<CodeRunResult | null>(() => readSession(STORAGE_KEY_RUN));
   const [aiResult,   setAiResult]   = useState<AIResult | null>(()     => readSession(STORAGE_KEY_AI));
-  const [activeMode, setActiveMode] = useState<"run" | "insights" | "explain" | null>(() => readSession(STORAGE_KEY_MODE));
+  const [activeMode, setActiveMode] = useState<"run" | "insights" | null>(() => readSession(STORAGE_KEY_MODE));
 
   const [isRunning,   setIsRunning]   = useState(false);
   const [isAILoading, setIsAILoading] = useState(false);
@@ -224,38 +224,6 @@ const handleEditorMount = useCallback(
     }
   }, [code, isAILoading]);
 
-  /**
-   * Triggered by the "Explain this error" button inside OutputPanel's ErrorBlock.
-   * Sends the raw error text to the AI with a beginner-friendly prompt prefix,
-   * then surfaces the result in the AI panel.
-   */
-  const handleExplainError = useCallback(async (errorText: string) => {
-    if (isAILoading) return;
-    setIsAILoading(true);
-    setActiveMode("explain");
-    setAiResult(null);
-    writeSession(STORAGE_KEY_MODE, "explain");
-    clearSession(STORAGE_KEY_AI);
-
-    const prompt =
-      `I am learning to code in EVAL, a statically-typed language. ` +
-      `My program produced the following runtime error:\n\n${errorText}\n\n` +
-      `Please explain what this error means in plain English, why it happened, ` +
-      `and show me a simple example of how to fix it.`;
-
-    try {
-      const data   = await fetchAIInsights(prompt);
-      const result = { content: data.content };
-      setAiResult(result);
-      writeSession(STORAGE_KEY_AI, result);
-    } catch (err) {
-      const result = { error: err instanceof Error ? err.message : "Network error — is the backend running?" };
-      setAiResult(result);
-      writeSession(STORAGE_KEY_AI, result);
-    } finally {
-      setIsAILoading(false);
-    }
-  }, [isAILoading]);
 
   const onClear = useCallback(() => {
     setRunResult(null);
@@ -283,7 +251,6 @@ const handleEditorMount = useCallback(
           result={runResult}
           isRunning={isRunning}
           onClear={onClear}
-          onExplainError={handleExplainError}
         />
       }
       bottom={
