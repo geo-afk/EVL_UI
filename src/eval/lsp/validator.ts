@@ -578,31 +578,57 @@ function analyzeCode(code: string): Diagnostics[] {
     });
   }
 
-  // ── PASS 1: forward-declaration scan ────────────────────────────────────────
-  // Pre-register every declared variable so forward references in expressions
-  // are resolved correctly.  The first occurrence of each name wins.
-  lines.forEach((t, i) => {
-    const mDecl = t.match(DECL_RE);
-    if (mDecl) {
-      const [, constKw, type, name] = mDecl;
-      if (!symbols.has(name))
-        symbols.declare(name, type as EVALType, !!constKw, i + 1, true);
-      return;
-    }
-    const mNoAssign = t.match(DECL_NO_ASSIGN_RE);
-    if (mNoAssign) {
-      const [, constKw, type, name] = mNoAssign;
-      if (!symbols.has(name))
-        symbols.declare(name, type as EVALType, !!constKw, i + 1, false);
-    }
-  });
+  // ── PASS 1: forward-declaration scan (global scope only) ────────────────────
+  // Pre-registers top-level (brace-depth 0) variable declarations so that
+  // forward references in global-scope expressions resolve correctly.
+  //
+  // IMPORTANT: inner-scope declarations (inside if / while / for / try blocks)
+  // are intentionally excluded here.  If they were registered into the global
+  // scope, lookup() would find them from any outer scope and the duplicate-
+  // declaration check in PASS 2 would incorrectly fire when a variable with
+  // the same name is declared in an enclosing scope (valid shadowing).
+  // Inner declarations are registered into the correct nested scope during PASS 2.
+  {
+    let depth = 0;
+    lines.forEach((t, i) => {
+      const opens = (t.match(/\{/g) ?? []).length;
+      const closes = (t.match(/\}/g) ?? []).length;
+
+      // Only register at the global level
+      if (depth === 0) {
+        const mDecl = t.match(DECL_RE);
+        if (mDecl) {
+          const [, constKw, type, name] = mDecl;
+          if (!symbols.has(name))
+            symbols.declare(name, type as EVALType, !!constKw, i + 1, true);
+        } else {
+          const mNoAssign = t.match(DECL_NO_ASSIGN_RE);
+          if (mNoAssign) {
+            const [, constKw, type, name] = mNoAssign;
+            if (!symbols.has(name))
+              symbols.declare(name, type as EVALType, !!constKw, i + 1, false);
+          }
+        }
+      }
+
+      depth += opens - closes;
+    });
+  }
 
   // ── PASS 2: full validation ──────────────────────────────────────────────────
+
+  // braceDepth tracks nesting purely for the insideTryCatch division-by-zero
+  // suppression logic.  Scope push/pop is now driven by counting { and } on
+  // each line so that if / else / while / for / try / catch all get their own
+  // nested scope automatically.
   let insideTryCatch = false;
   let braceDepth = 0;
   let tryStartDepth = -1;
 
-  /** Utility: pop a scope and emit unused-variable warnings for its symbols. */
+  /**
+   * Pop one scope level and emit unused-variable warnings for every symbol
+   * that was declared in it but never read after declaration.
+   */
   function closeScope(): void {
     const popped = symbols.popScope();
     for (const sym of popped) {
@@ -623,63 +649,54 @@ function analyzeCode(code: string): Diagnostics[] {
     const openBraces = (t.match(/\{/g) ?? []).length;
     const closeBraces = (t.match(/\}/g) ?? []).length;
 
-    // ── try { ───────────────────────────────────────────────────────────────
-    if (/^try\s*\{/.test(t)) {
-      insideTryCatch = true;
-      tryStartDepth = braceDepth;
-      braceDepth += openBraces - closeBraces;
-      symbols.pushScope();
-      return;
-    }
-
-    // ── } catch (id) { ──────────────────────────────────────────────────────
-    if (/^}\s*catch\s*\(\s*\w+\s*\)\s*\{/.test(t)) {
-      braceDepth += openBraces - closeBraces;
-      return;
-    }
-
-    // ── bare catch ──────────────────────────────────────────────────────────
-    if (/^catch\s*\(/.test(t)) {
-      braceDepth += openBraces - closeBraces;
-      return;
-    }
-
-    // ── bare brace lines  { or } ─────────────────────────────────────────────
-    if (/^[{}]$/.test(t)) {
-      braceDepth += openBraces - closeBraces;
+    // ── Scope pop: process every } BEFORE validating line content ────────────
+    //
+    //  This ensures that when we see `} else {` or a bare `}`, the inner scope
+    //  is closed (and unused-variable warnings emitted) before we push the next
+    //  scope for a following `{`.
+    for (let b = 0; b < closeBraces; b++) {
+      braceDepth--;
+      closeScope();
       if (insideTryCatch && braceDepth <= tryStartDepth) {
-        closeScope();
         insideTryCatch = false;
         tryStartDepth = -1;
       }
-      return;
     }
 
-    // Update depth for all other lines
-    braceDepth += openBraces - closeBraces;
-    if (insideTryCatch && braceDepth <= tryStartDepth) {
-      closeScope();
-      insideTryCatch = false;
-      tryStartDepth = -1;
+    // ── try / catch bookkeeping (division-by-zero suppression only) ──────────
+    if (/^try\s*\{/.test(t)) {
+      insideTryCatch = true;
+      tryStartDepth = braceDepth - 1; // depth was already decremented above if
+      // there was a } on this line; for a plain
+      // `try {` closeBraces==0 so braceDepth is
+      // still the pre-open value — record it now
+      // before the push below increments it.
+      tryStartDepth = braceDepth; // re-assign: this is the depth OUTSIDE try
     }
 
-    // ── Control-flow constructs — not function calls ─────────────────────────
+    // ── } catch (id) {  /  bare catch ────────────────────────────────────────
+    //  The } was already handled above.  The { will be pushed below.
+    //  Skip all other content on this line.
+    if (/^}?\s*catch\s*\(/.test(t)) {
+      // Push for the `{` that follows catch(...) is handled in the scope-push
+      // loop at the bottom of this iteration, so nothing extra needed here.
+    }
+
+    // ── Line content validation (skip bare brace-only lines) ─────────────────
+    const isBraceOnly = /^[{}\s]+$/.test(t);
+
+    // ── Control-flow constructs — analyse conditions, then fall through ────────
     //
-    //  Patterns that must be skipped before the function-call and
-    //  unrecognised-statement checks:
-    //
-    //   • if (...) {        else if (...) {        while (...) {
-    //   • else {            } else {               } else if (...) {
-    //   • for (...) {
-    //   • break             continue               return [expr]
-    //
-    //  None of these are function calls; passing them to validateFunctionCalls
-    //  would produce a spurious "Unknown function 'if'" (or 'while', etc.) warn.
+    //  These lines are NOT function calls.  We analyse any condition expression
+    //  for variable usage / undeclared refs, then set `isControlFlow = true` so
+    //  the content-validation block below is skipped.  Crucially we do NOT
+    //  `return` early — the scope-push loop at the bottom still needs to run so
+    //  that every `{` on the line opens a new scope.
+    let isControlFlow = false;
+
     if (/^(if|else\s+if|while|for)\s*\(/.test(t)) {
-      // Extract the top-level condition between the first balanced pair of parens
-      // so that any variables referenced inside (e.g. `temperature` in
-      // `if (temperature >= 0)`) are counted as reads and do not trigger the
-      // "declared but never used" warning.
+      isControlFlow = true;
+      // Extract the condition so variables referenced inside are counted as reads.
       const parenOpen = t.indexOf("(");
       if (parenOpen !== -1) {
         let depth = 0,
@@ -701,28 +718,29 @@ function analyzeCode(code: string): Diagnostics[] {
           validateFunctionCalls(condition, ln, undefined, symbols, error, warn);
         }
       }
-      return;
-    }
-
-    if (
+    } else if (
       /^else\b/.test(t) || // else { … }
       /^}\s*else\b/.test(t) // } else { … }  /  } else if (...) {
     ) {
-      return;
-    }
-
-    if (/^return\b/.test(t)) {
-      // Mark any identifiers in the returned expression as used.
+      isControlFlow = true;
+    } else if (/^return\b/.test(t)) {
+      isControlFlow = true;
       const retExpr = t.replace(/^return\b\s*/, "");
       if (retExpr) {
         markUsedRefs(retExpr, symbols);
         checkUndeclaredRefs(retExpr, symbols, ln, "", error, warn);
         validateFunctionCalls(retExpr, ln, undefined, symbols, error, warn);
       }
-      return;
+    } else if (/^(break|continue)\b/.test(t)) {
+      isControlFlow = true;
     }
 
-    if (/^(break|continue)\b/.test(t)) {
+    if (isControlFlow || isBraceOnly) {
+      // Still need to push scopes for any { on this line before moving on.
+      for (let b = 0; b < openBraces; b++) {
+        symbols.pushScope();
+        braceDepth++;
+      }
       return;
     }
 
@@ -749,16 +767,32 @@ function analyzeCode(code: string): Diagnostics[] {
         );
       }
 
-      // ── Duplicate declaration ──────────────────────────────────────────────
-      // Pass 1 may have registered this name; if the stored line ≠ current
-      // line it was declared earlier.
-      const existing = symbols.lookup(varName);
-      if (existing && existing.declaredLine !== ln) {
+      // ── Duplicate declaration (same scope only) ──────────────────────────────
+      //
+      //  We deliberately check currentScopeSymbols() rather than lookup() so
+      //  that re-declaring a name in an INNER scope (valid shadowing) does not
+      //  produce a warning.  Only declaring the same name TWICE in the same
+      //  scope — e.g. two `int x = …` at the top level — is flagged.
+      const existingInCurrentScope = symbols
+        .currentScopeSymbols()
+        .find((s) => s.name === varName);
+      if (
+        existingInCurrentScope &&
+        existingInCurrentScope.declaredLine !== ln
+      ) {
         warn(
           ln,
-          `Variable '${varName}' is already declared on line ${existing.declaredLine}`,
+          `Variable '${varName}' is already declared on line ${existingInCurrentScope.declaredLine}`,
           varCol,
         );
+      }
+
+      // Register the variable into the current scope so inner declarations
+      // land in the block scope (not the global one from PASS 1).
+      // currentScopeSymbols() check above prevents a double-register in the
+      // same scope (PASS 1 already added global-scope vars).
+      if (!existingInCurrentScope) {
+        symbols.declare(varName, declaredType as EVALType, isConst, ln, true);
       }
 
       // ── Bool: RHS must be bool-typed ───────────────────────────────────────
@@ -1032,6 +1066,16 @@ function analyzeCode(code: string): Diagnostics[] {
     // ── Unrecognised statement ────────────────────────────────────────────────
     if (!/^\s*$/.test(t)) {
       warn(ln, `Unrecognized statement: '${t}'`);
+    }
+
+    // ── Scope push: open a new scope for every { on this line ────────────────
+    //
+    //  Done LAST so that variables declared on a block-opening line (rare, but
+    //  possible) are validated in the outer scope before the new one is entered.
+    //  (Control-flow and brace-only lines push their scopes earlier and return.)
+    for (let b = 0; b < openBraces; b++) {
+      symbols.pushScope();
+      braceDepth++;
     }
   });
 
