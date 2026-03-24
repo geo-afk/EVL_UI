@@ -9,16 +9,13 @@ import { VariableDeclarationContext } from "./EVALParser.js";
 import { ConstDeclarationContext } from "./EVALParser.js";
 import { AssignmentContext } from "./EVALParser.js";
 import { AssignOpContext } from "./EVALParser.js";
+import { BreakStatementContext } from "./EVALParser.js";
+import { ContinueStatementContext } from "./EVALParser.js";
 import { TypeContext } from "./EVALParser.js";
 import { UnaryMinusExprContext } from "./EVALParser.js";
+import { UnaryNotExprContext } from "./EVALParser.js";
 import { ParenExprContext } from "./EVALParser.js";
-import { CastExprContext } from "./EVALParser.js";
-import { PowExprContext } from "./EVALParser.js";
-import { SqrtExprContext } from "./EVALParser.js";
-import { MinExprContext } from "./EVALParser.js";
-import { MaxExprContext } from "./EVALParser.js";
-import { RoundExprContext } from "./EVALParser.js";
-import { AbsExprContext } from "./EVALParser.js";
+import { BuiltinExprContext } from "./EVALParser.js";
 import { MacroExprContext } from "./EVALParser.js";
 import { IdentExprContext } from "./EVALParser.js";
 import { IntLiteralContext } from "./EVALParser.js";
@@ -26,10 +23,15 @@ import { RealLiteralContext } from "./EVALParser.js";
 import { StringLiteralContext } from "./EVALParser.js";
 import { TrueLiteralContext } from "./EVALParser.js";
 import { FalseLiteralContext } from "./EVALParser.js";
+import { NullLiteralContext } from "./EVALParser.js";
+import { LogicalOrExprContext } from "./EVALParser.js";
+import { LogicalAndExprContext } from "./EVALParser.js";
 import { EqualityExprContext } from "./EVALParser.js";
 import { RelationalExprContext } from "./EVALParser.js";
 import { AdditiveExprContext } from "./EVALParser.js";
 import { MultiplicativeExprContext } from "./EVALParser.js";
+import { BuiltinFuncContext } from "./EVALParser.js";
+import { BuiltinCallStatementContext } from "./EVALParser.js";
 import { CastCallContext } from "./EVALParser.js";
 import { PowCallContext } from "./EVALParser.js";
 import { SqrtCallContext } from "./EVALParser.js";
@@ -121,6 +123,26 @@ export class EVALParserListener implements ParseTreeListener {
      */
     exitAssignOp?: (ctx: AssignOpContext) => void;
     /**
+     * Enter a parse tree produced by `EVALParser.breakStatement`.
+     * @param ctx the parse tree
+     */
+    enterBreakStatement?: (ctx: BreakStatementContext) => void;
+    /**
+     * Exit a parse tree produced by `EVALParser.breakStatement`.
+     * @param ctx the parse tree
+     */
+    exitBreakStatement?: (ctx: BreakStatementContext) => void;
+    /**
+     * Enter a parse tree produced by `EVALParser.continueStatement`.
+     * @param ctx the parse tree
+     */
+    enterContinueStatement?: (ctx: ContinueStatementContext) => void;
+    /**
+     * Exit a parse tree produced by `EVALParser.continueStatement`.
+     * @param ctx the parse tree
+     */
+    exitContinueStatement?: (ctx: ContinueStatementContext) => void;
+    /**
      * Enter a parse tree produced by `EVALParser.type`.
      * @param ctx the parse tree
      */
@@ -143,6 +165,18 @@ export class EVALParserListener implements ParseTreeListener {
      */
     exitUnaryMinusExpr?: (ctx: UnaryMinusExprContext) => void;
     /**
+     * Enter a parse tree produced by the `unaryNotExpr`
+     * labeled alternative in `EVALParser.expression`.
+     * @param ctx the parse tree
+     */
+    enterUnaryNotExpr?: (ctx: UnaryNotExprContext) => void;
+    /**
+     * Exit a parse tree produced by the `unaryNotExpr`
+     * labeled alternative in `EVALParser.expression`.
+     * @param ctx the parse tree
+     */
+    exitUnaryNotExpr?: (ctx: UnaryNotExprContext) => void;
+    /**
      * Enter a parse tree produced by the `parenExpr`
      * labeled alternative in `EVALParser.expression`.
      * @param ctx the parse tree
@@ -155,89 +189,17 @@ export class EVALParserListener implements ParseTreeListener {
      */
     exitParenExpr?: (ctx: ParenExprContext) => void;
     /**
-     * Enter a parse tree produced by the `castExpr`
+     * Enter a parse tree produced by the `builtinExpr`
      * labeled alternative in `EVALParser.expression`.
      * @param ctx the parse tree
      */
-    enterCastExpr?: (ctx: CastExprContext) => void;
+    enterBuiltinExpr?: (ctx: BuiltinExprContext) => void;
     /**
-     * Exit a parse tree produced by the `castExpr`
+     * Exit a parse tree produced by the `builtinExpr`
      * labeled alternative in `EVALParser.expression`.
      * @param ctx the parse tree
      */
-    exitCastExpr?: (ctx: CastExprContext) => void;
-    /**
-     * Enter a parse tree produced by the `powExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    enterPowExpr?: (ctx: PowExprContext) => void;
-    /**
-     * Exit a parse tree produced by the `powExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    exitPowExpr?: (ctx: PowExprContext) => void;
-    /**
-     * Enter a parse tree produced by the `sqrtExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    enterSqrtExpr?: (ctx: SqrtExprContext) => void;
-    /**
-     * Exit a parse tree produced by the `sqrtExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    exitSqrtExpr?: (ctx: SqrtExprContext) => void;
-    /**
-     * Enter a parse tree produced by the `minExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    enterMinExpr?: (ctx: MinExprContext) => void;
-    /**
-     * Exit a parse tree produced by the `minExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    exitMinExpr?: (ctx: MinExprContext) => void;
-    /**
-     * Enter a parse tree produced by the `maxExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    enterMaxExpr?: (ctx: MaxExprContext) => void;
-    /**
-     * Exit a parse tree produced by the `maxExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    exitMaxExpr?: (ctx: MaxExprContext) => void;
-    /**
-     * Enter a parse tree produced by the `roundExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    enterRoundExpr?: (ctx: RoundExprContext) => void;
-    /**
-     * Exit a parse tree produced by the `roundExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    exitRoundExpr?: (ctx: RoundExprContext) => void;
-    /**
-     * Enter a parse tree produced by the `absExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    enterAbsExpr?: (ctx: AbsExprContext) => void;
-    /**
-     * Exit a parse tree produced by the `absExpr`
-     * labeled alternative in `EVALParser.expression`.
-     * @param ctx the parse tree
-     */
-    exitAbsExpr?: (ctx: AbsExprContext) => void;
+    exitBuiltinExpr?: (ctx: BuiltinExprContext) => void;
     /**
      * Enter a parse tree produced by the `macroExpr`
      * labeled alternative in `EVALParser.expression`.
@@ -323,6 +285,42 @@ export class EVALParserListener implements ParseTreeListener {
      */
     exitFalseLiteral?: (ctx: FalseLiteralContext) => void;
     /**
+     * Enter a parse tree produced by the `nullLiteral`
+     * labeled alternative in `EVALParser.expression`.
+     * @param ctx the parse tree
+     */
+    enterNullLiteral?: (ctx: NullLiteralContext) => void;
+    /**
+     * Exit a parse tree produced by the `nullLiteral`
+     * labeled alternative in `EVALParser.expression`.
+     * @param ctx the parse tree
+     */
+    exitNullLiteral?: (ctx: NullLiteralContext) => void;
+    /**
+     * Enter a parse tree produced by the `logicalOrExpr`
+     * labeled alternative in `EVALParser.expression`.
+     * @param ctx the parse tree
+     */
+    enterLogicalOrExpr?: (ctx: LogicalOrExprContext) => void;
+    /**
+     * Exit a parse tree produced by the `logicalOrExpr`
+     * labeled alternative in `EVALParser.expression`.
+     * @param ctx the parse tree
+     */
+    exitLogicalOrExpr?: (ctx: LogicalOrExprContext) => void;
+    /**
+     * Enter a parse tree produced by the `logicalAndExpr`
+     * labeled alternative in `EVALParser.expression`.
+     * @param ctx the parse tree
+     */
+    enterLogicalAndExpr?: (ctx: LogicalAndExprContext) => void;
+    /**
+     * Exit a parse tree produced by the `logicalAndExpr`
+     * labeled alternative in `EVALParser.expression`.
+     * @param ctx the parse tree
+     */
+    exitLogicalAndExpr?: (ctx: LogicalAndExprContext) => void;
+    /**
      * Enter a parse tree produced by the `equalityExpr`
      * labeled alternative in `EVALParser.expression`.
      * @param ctx the parse tree
@@ -370,6 +368,26 @@ export class EVALParserListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitMultiplicativeExpr?: (ctx: MultiplicativeExprContext) => void;
+    /**
+     * Enter a parse tree produced by `EVALParser.builtinFunc`.
+     * @param ctx the parse tree
+     */
+    enterBuiltinFunc?: (ctx: BuiltinFuncContext) => void;
+    /**
+     * Exit a parse tree produced by `EVALParser.builtinFunc`.
+     * @param ctx the parse tree
+     */
+    exitBuiltinFunc?: (ctx: BuiltinFuncContext) => void;
+    /**
+     * Enter a parse tree produced by `EVALParser.builtinCallStatement`.
+     * @param ctx the parse tree
+     */
+    enterBuiltinCallStatement?: (ctx: BuiltinCallStatementContext) => void;
+    /**
+     * Exit a parse tree produced by `EVALParser.builtinCallStatement`.
+     * @param ctx the parse tree
+     */
+    exitBuiltinCallStatement?: (ctx: BuiltinCallStatementContext) => void;
     /**
      * Enter a parse tree produced by `EVALParser.castCall`.
      * @param ctx the parse tree
