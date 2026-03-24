@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { Box, Flex, Text } from "@chakra-ui/react";
-import { HelpCircle, CheckCircle2, XCircle, RefreshCw, ChevronRight } from "lucide-react";
+import {
+  HelpCircle,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  ChevronRight,
+} from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface QuizQuestion {
-  q: string;           // question text
-  options: string[];   // exactly 4 choices
-  correct: number;     // 0-based index of the right answer
+  q: string; // question text
+  options: string[]; // exactly 4 choices
+  correct: number; // 0-based index of the right answer
   explanation: string; // shown after the user answers
 }
 
@@ -98,15 +104,19 @@ function QuestionView({
             }}
             onMouseEnter={(e) => {
               if (answered) return;
-              (e.currentTarget as HTMLButtonElement).style.borderColor = `${accent}66`;
-              (e.currentTarget as HTMLButtonElement).style.color = "var(--text-primary)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                `${accent}66`;
+              (e.currentTarget as HTMLButtonElement).style.color =
+                "var(--text-primary)";
             }}
             onMouseLeave={(e) => {
               if (answered) return;
               const s = getOptionStyle(idx);
-              (e.currentTarget as HTMLButtonElement).style.borderColor =
-                (s.border as string).replace("1px solid ", "");
-              (e.currentTarget as HTMLButtonElement).style.color = s.color as string;
+              (e.currentTarget as HTMLButtonElement).style.borderColor = (
+                s.border as string
+              ).replace("1px solid ", "");
+              (e.currentTarget as HTMLButtonElement).style.color =
+                s.color as string;
             }}
           >
             {/* Option letter badge */}
@@ -118,17 +128,18 @@ function QuestionView({
               align="center"
               justify="center"
               style={{
-                background: answered && idx === question.correct
-                  ? "rgba(74,222,128,0.2)"
-                  : answered && idx === selected && idx !== question.correct
-                  ? "rgba(248,113,113,0.2)"
-                  : `${accent}18`,
+                background:
+                  answered && idx === question.correct
+                    ? "rgba(74,222,128,0.2)"
+                    : answered && idx === selected && idx !== question.correct
+                      ? "rgba(248,113,113,0.2)"
+                      : `${accent}18`,
                 border: `1px solid ${
                   answered && idx === question.correct
                     ? "rgba(74,222,128,0.4)"
                     : answered && idx === selected && idx !== question.correct
-                    ? "rgba(248,113,113,0.35)"
-                    : `${accent}33`
+                      ? "rgba(248,113,113,0.35)"
+                      : `${accent}33`
                 }`,
               }}
             >
@@ -152,7 +163,11 @@ function QuestionView({
               fontSize="12.5px"
               lineHeight="1.5"
               flex={1}
-              fontFamily={opt.includes("(") || /^[a-z]+\s/.test(opt) ? "'JetBrains Mono', monospace" : "inherit"}
+              fontFamily={
+                opt.includes("(") || /^[a-z]+\s/.test(opt)
+                  ? "'JetBrains Mono', monospace"
+                  : "inherit"
+              }
             >
               {opt}
             </Text>
@@ -167,20 +182,32 @@ function QuestionView({
           gap="10px"
           p="12px 14px"
           borderRadius="8px"
-          bg={selected === question.correct
-            ? "rgba(74,222,128,0.06)"
-            : "rgba(248,113,113,0.06)"}
-          border={`1px solid ${selected === question.correct
-            ? "rgba(74,222,128,0.2)"
-            : "rgba(248,113,113,0.2)"}`}
+          bg={
+            selected === question.correct
+              ? "rgba(74,222,128,0.06)"
+              : "rgba(248,113,113,0.06)"
+          }
+          border={`1px solid ${
+            selected === question.correct
+              ? "rgba(74,222,128,0.2)"
+              : "rgba(248,113,113,0.2)"
+          }`}
           style={{
             animation: "quizFadeIn 0.2s ease",
           }}
         >
           {selected === question.correct ? (
-            <CheckCircle2 size={14} color="#4ade80" style={{ flexShrink: 0, marginTop: "1px" }} />
+            <CheckCircle2
+              size={14}
+              color="#4ade80"
+              style={{ flexShrink: 0, marginTop: "1px" }}
+            />
           ) : (
-            <XCircle size={14} color="#f87171" style={{ flexShrink: 0, marginTop: "1px" }} />
+            <XCircle
+              size={14}
+              color="#f87171"
+              style={{ flexShrink: 0, marginTop: "1px" }}
+            />
           )}
           <Box>
             <Text
@@ -193,7 +220,11 @@ function QuestionView({
             >
               {selected === question.correct ? "CORRECT!" : "NOT QUITE"}
             </Text>
-            <Text fontSize="12.5px" color="var(--text-secondary)" lineHeight="1.65">
+            <Text
+              fontSize="12.5px"
+              color="var(--text-secondary)"
+              lineHeight="1.65"
+            >
               {question.explanation}
             </Text>
           </Box>
@@ -205,13 +236,13 @@ function QuestionView({
 
 // ─── Main quiz component ──────────────────────────────────────────────────────
 export function SectionQuiz({ questions, accent }: SectionQuizProps) {
-  const [currentIdx,  setCurrentIdx]  = useState(0);
-  const [score,       setScore]       = useState(0);
-  const [answered,    setAnswered]    = useState(false);
-  const [done,        setDone]        = useState(false);
-  const [open,        setOpen]        = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [score, setScore] = useState(0);
+  const [answered, setAnswered] = useState(false);
+  const [done, setDone] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const total   = questions.length;
+  const total = questions.length;
   const current = questions[currentIdx];
 
   const handleAnswered = (correct: boolean) => {
@@ -235,7 +266,7 @@ export function SectionQuiz({ questions, accent }: SectionQuizProps) {
     setDone(false);
   };
 
-  const finalPct   = Math.round((score / total) * 100);
+  const finalPct = Math.round((score / total) * 100);
   const allCorrect = score === total;
 
   return (
@@ -257,12 +288,14 @@ export function SectionQuiz({ questions, accent }: SectionQuizProps) {
         }}
         onMouseEnter={(e) => {
           if (!open) {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = `${accent}44`;
+            (e.currentTarget as HTMLButtonElement).style.borderColor =
+              `${accent}44`;
           }
         }}
         onMouseLeave={(e) => {
           if (!open) {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor =
+              "var(--border)";
           }
         }}
       >
@@ -280,7 +313,12 @@ export function SectionQuiz({ questions, accent }: SectionQuizProps) {
         </Flex>
 
         <Box flex={1} textAlign="left">
-          <Text fontSize="12px" fontWeight="700" color="var(--text-primary)" fontFamily="monospace">
+          <Text
+            fontSize="12px"
+            fontWeight="700"
+            color="var(--text-primary)"
+            fontFamily="monospace"
+          >
             Test yourself
           </Text>
           <Text fontSize="10.5px" color="var(--text-ghost)">
@@ -347,8 +385,8 @@ export function SectionQuiz({ questions, accent }: SectionQuizProps) {
                         i < currentIdx
                           ? "#4ade80"
                           : i === currentIdx
-                          ? accent
-                          : "var(--bg-elevated)"
+                            ? accent
+                            : "var(--bg-elevated)"
                       }
                       transition="background 0.2s"
                     />
@@ -366,6 +404,7 @@ export function SectionQuiz({ questions, accent }: SectionQuizProps) {
               )}
 
               <QuestionView
+                key={currentIdx}
                 question={current}
                 accent={accent}
                 onAnswered={handleAnswered}
@@ -393,10 +432,12 @@ export function SectionQuiz({ questions, accent }: SectionQuizProps) {
                       transition: "opacity 0.15s",
                     }}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLButtonElement).style.opacity = "0.85";
+                      (e.currentTarget as HTMLButtonElement).style.opacity =
+                        "0.85";
                     }}
                     onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLButtonElement).style.opacity = "1";
+                      (e.currentTarget as HTMLButtonElement).style.opacity =
+                        "1";
                     }}
                   >
                     {currentIdx < total - 1 ? "Next question" : "See results"}
@@ -411,9 +452,19 @@ export function SectionQuiz({ questions, accent }: SectionQuizProps) {
               {/* Score ring */}
               <Box position="relative" w="72px" h="72px">
                 <svg width="72" height="72" viewBox="0 0 72 72">
-                  <circle cx="36" cy="36" r="28" fill="none"
-                    stroke="var(--bg-elevated)" strokeWidth="6" />
-                  <circle cx="36" cy="36" r="28" fill="none"
+                  <circle
+                    cx="36"
+                    cy="36"
+                    r="28"
+                    fill="none"
+                    stroke="var(--bg-elevated)"
+                    strokeWidth="6"
+                  />
+                  <circle
+                    cx="36"
+                    cy="36"
+                    r="28"
+                    fill="none"
                     stroke={allCorrect ? "#4ade80" : accent}
                     strokeWidth="6"
                     strokeLinecap="round"
@@ -451,8 +502,8 @@ export function SectionQuiz({ questions, accent }: SectionQuizProps) {
                   {allCorrect
                     ? "Perfect score! 🎉"
                     : score >= total * 0.6
-                    ? "Good work!"
-                    : "Keep practising!"}
+                      ? "Good work!"
+                      : "Keep practising!"}
                 </Text>
                 <Text fontSize="12px" color="var(--text-muted)">
                   {allCorrect
@@ -506,3 +557,4 @@ export function SectionQuiz({ questions, accent }: SectionQuizProps) {
     </Box>
   );
 }
+
