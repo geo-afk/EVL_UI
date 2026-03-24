@@ -39,15 +39,15 @@ export interface SymbolInfo {
  *
  * Public API
  * ──────────
- *  pushScope()               – open a new nested scope
- *  popScope()                – close scope; returns its symbols for analysis
- *  declare(…)                – register a variable in the current scope
- *  assign(name)              – mark as initialised; returns false if unknown
- *  markUsed(name)            – increment read counter; no-op if unknown
- *  lookup(name)              – walk scopes outward; returns SymbolInfo | undef
- *  has(name)                 – quick existence check across all scopes
- *  allSymbols()              – flat list across every live scope
- *  currentScopeSymbols()     – symbols in the innermost scope only
+ *  pushScope()                open a new nested scope
+ *  popScope()                 close scope; returns its symbols for analysis
+ *  declare(…)                 register a variable in the current scope
+ *  assign(name)               mark as initialised; returns false if unknown
+ *  markUsed(name)             increment read counter; no-op if unknown
+ *  lookup(name)               walk scopes outward; returns SymbolInfo | undef
+ *  has(name)                  quick existence check across all scopes
+ *  allSymbols()               flat list across every live scope
+ *  currentScopeSymbols()      symbols in the innermost scope only
  */
 export class SymbolTable {
   private scopes: Map<string, SymbolInfo>[] = [new Map()];
@@ -661,6 +661,69 @@ function analyzeCode(code: string): Diagnostics[] {
       closeScope();
       insideTryCatch = false;
       tryStartDepth = -1;
+    }
+
+    // ── Control-flow constructs — not function calls ─────────────────────────
+    //
+    //  Patterns that must be skipped before the function-call and
+    //  unrecognised-statement checks:
+    //
+    //   • if (...) {        else if (...) {        while (...) {
+    //   • else {            } else {               } else if (...) {
+    //   • for (...) {
+    //   • break             continue               return [expr]
+    //
+    //  None of these are function calls; passing them to validateFunctionCalls
+    //  would produce a spurious "Unknown function 'if'" (or 'while', etc.) warn.
+    if (/^(if|else\s+if|while|for)\s*\(/.test(t)) {
+      // Extract the top-level condition between the first balanced pair of parens
+      // so that any variables referenced inside (e.g. `temperature` in
+      // `if (temperature >= 0)`) are counted as reads and do not trigger the
+      // "declared but never used" warning.
+      const parenOpen = t.indexOf("(");
+      if (parenOpen !== -1) {
+        let depth = 0,
+          parenClose = -1;
+        for (let ci = parenOpen; ci < t.length; ci++) {
+          if (t[ci] === "(") depth++;
+          else if (t[ci] === ")") {
+            depth--;
+            if (depth === 0) {
+              parenClose = ci;
+              break;
+            }
+          }
+        }
+        if (parenClose !== -1) {
+          const condition = t.slice(parenOpen + 1, parenClose);
+          markUsedRefs(condition, symbols);
+          checkUndeclaredRefs(condition, symbols, ln, "", error, warn);
+          validateFunctionCalls(condition, ln, undefined, symbols, error, warn);
+        }
+      }
+      return;
+    }
+
+    if (
+      /^else\b/.test(t) || // else { … }
+      /^}\s*else\b/.test(t) // } else { … }  /  } else if (...) {
+    ) {
+      return;
+    }
+
+    if (/^return\b/.test(t)) {
+      // Mark any identifiers in the returned expression as used.
+      const retExpr = t.replace(/^return\b\s*/, "");
+      if (retExpr) {
+        markUsedRefs(retExpr, symbols);
+        checkUndeclaredRefs(retExpr, symbols, ln, "", error, warn);
+        validateFunctionCalls(retExpr, ln, undefined, symbols, error, warn);
+      }
+      return;
+    }
+
+    if (/^(break|continue)\b/.test(t)) {
+      return;
     }
 
     // ── Missing variable name:  int = ... ────────────────────────────────────

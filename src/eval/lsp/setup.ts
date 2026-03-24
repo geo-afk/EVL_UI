@@ -5,23 +5,28 @@ import { hoverDocs } from "./hover";
 import { parseCode } from "./error_handler";
 import { codeActions } from "./code_actions";
 import { completionSuggestions } from "./completion";
+import {
+  extractDeclaredVariables,
+  isInsideFunctionArgs,
+  isInsideCondition,
+  variableCompletionItems,
+} from "./variable_completion";
 import { EVAL_LANGUAGE_ID, FUNCTION_SIGNATURES } from "../../model/models";
 
-
-
-
-
 export function setup_eval(monacoInstance: typeof monaco) {
+  monacoInstance.languages.register({ id: EVAL_LANGUAGE_ID });
 
-  monacoInstance.languages.register({ id: EVAL_LANGUAGE_ID })
+  monacoInstance.languages.setMonarchTokensProvider(
+    EVAL_LANGUAGE_ID,
+    syntax_definition() as monaco.languages.IMonarchLanguage,
+  );
 
-  monacoInstance.languages.setMonarchTokensProvider(EVAL_LANGUAGE_ID, syntax_definition() as monaco.languages.IMonarchLanguage)
-
-  monacoInstance.languages.setLanguageConfiguration(EVAL_LANGUAGE_ID, language_configuration())
-
+  monacoInstance.languages.setLanguageConfiguration(
+    EVAL_LANGUAGE_ID,
+    language_configuration(),
+  );
 
   const hover: Record<string, string> = hoverDocs();
-
 
   monacoInstance.languages.registerHoverProvider(EVAL_LANGUAGE_ID, {
     provideHover: (model, position) => {
@@ -36,44 +41,63 @@ export function setup_eval(monacoInstance: typeof monaco) {
           position.lineNumber,
           word.startColumn,
           position.lineNumber,
-          word.endColumn
+          word.endColumn,
         ),
-        contents: [
-          { value: docs }
-        ]
+        contents: [{ value: docs }],
       };
-    }
+    },
   });
 
-
-
   monacoInstance.languages.registerCompletionItemProvider(EVAL_LANGUAGE_ID, {
-
-    provideCompletionItems: (model: monaco.editor.ITextModel, position: monaco.Position) => {
-
-
+    provideCompletionItems: (
+      model: monaco.editor.ITextModel,
+      position: monaco.Position,
+    ) => {
       const word = model.getWordUntilPosition(position);
       const range = {
         startLineNumber: position.lineNumber,
         endLineNumber: position.lineNumber,
         startColumn: word.startColumn,
-        endColumn: word.endColumn
+        endColumn: word.endColumn,
       };
 
+      // ── Static keyword / builtin / snippet suggestions ─────────────────────
+      const staticSuggestions = completionSuggestions(range, monacoInstance);
 
-      const suggestions = completionSuggestions(range, monacoInstance)
+      // ── Dynamic variable suggestions ───────────────────────────────────────
+      // Scan the document up to the current cursor line so only variables that
+      // are already in scope are offered.
+      const fullCode = model.getValue();
+      const declaredVars = extractDeclaredVariables(
+        fullCode,
+        position.lineNumber,
+      );
 
+      // Determine context so we can boost variable sort priority when the
+      // cursor is inside a function argument list or a control-flow condition.
+      const textBeforeCursor = model.getValueInRange({
+        startLineNumber: position.lineNumber,
+        startColumn: 1,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column,
+      });
+      const prioritise =
+        isInsideFunctionArgs(textBeforeCursor) ||
+        isInsideCondition(textBeforeCursor);
 
-      return { suggestions }
-    }
+      const varSuggestions = variableCompletionItems(
+        declaredVars,
+        range,
+        monacoInstance,
+        prioritise,
+      );
 
-
-
-  })
-
+      return { suggestions: [...varSuggestions, ...staticSuggestions] };
+    },
+  });
 
   monacoInstance.languages.registerSignatureHelpProvider(EVAL_LANGUAGE_ID, {
-    signatureHelpTriggerCharacters: ['(', ','],
+    signatureHelpTriggerCharacters: ["(", ","],
 
     provideSignatureHelp(model, position) {
       const textUntilCursor = model.getValueInRange({
@@ -88,7 +112,7 @@ export function setup_eval(monacoInstance: typeof monaco) {
 
       const fnName: string = match[1];
       if (!(fnName in FUNCTION_SIGNATURES)) return null;
-      const argIndex = match[2].split(',').length - 1;
+      const argIndex = match[2].split(",").length - 1;
 
       type FunctionName = keyof typeof FUNCTION_SIGNATURES;
       const signature: any = FUNCTION_SIGNATURES[fnName as FunctionName];
@@ -100,39 +124,36 @@ export function setup_eval(monacoInstance: typeof monaco) {
           activeSignature: 0,
           activeParameter: argIndex,
         },
-        dispose() { },
+        dispose() {},
       };
     },
   });
 
-
-  codeActions(EVAL_LANGUAGE_ID, monacoInstance)
-
+  codeActions(EVAL_LANGUAGE_ID, monacoInstance);
 }
-
 
 export function updateDiagnostics(code: string, monacoInstance: typeof monaco) {
   const errors = parseCode(code);
 
-  const markers = errors.map(err => ({
+  // err.column is already 1-based (error_handler.ts converts charPositionInLine + 1).
+  // Adding another +1 here would shift every squiggle one column to the right.
+  const markers = errors.map((err) => ({
     severity: monacoInstance.MarkerSeverity.Error,
     startLineNumber: err.line,
-    startColumn: err.column + 1,
+    startColumn: err.column,
     endLineNumber: err.line,
-    endColumn: err.column + 2,
-    message: err.message
+    endColumn: err.column + 1,
+    message: err.message,
   }));
 
-  const model = monacoInstance.editor.getModels && monacoInstance.editor.getModels()[0];
+  const model =
+    monacoInstance.editor.getModels && monacoInstance.editor.getModels()[0];
   if (model) {
-    monacoInstance.editor.setModelMarkers(model, 'antlr', markers);
+    monacoInstance.editor.setModelMarkers(model, "antlr", markers);
   }
 }
 
-
-
 export function setError(errors: any, monacoInstance: typeof monaco) {
-
   const errorMarkers = errors.map((err: any) => ({
     startLineNumber: err.line_number || 1,
     startColumn: err.column_number || 1,
@@ -142,10 +163,9 @@ export function setError(errors: any, monacoInstance: typeof monaco) {
     severity: monacoInstance.MarkerSeverity.Error,
   }));
 
-  const model = monacoInstance.editor.getModels && monacoInstance.editor.getModels()[0];
+  const model =
+    monacoInstance.editor.getModels && monacoInstance.editor.getModels()[0];
   if (model) {
-    monacoInstance.editor.setModelMarkers(model, 'antlr', errorMarkers);
+    monacoInstance.editor.setModelMarkers(model, "antlr", errorMarkers);
   }
-
 }
-
