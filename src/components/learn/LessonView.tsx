@@ -10,7 +10,7 @@ type LessonViewProps = {
   lessonIndex: number;
   totalLessons: number;
   onBack: () => void;
-  onTryInEditor: (code: string) => void;  // <--- change here
+  onTryInEditor: (code: string) => void;  
 }
 
 export function LessonView({
