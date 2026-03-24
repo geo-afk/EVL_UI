@@ -3,8 +3,15 @@ import { DIFF_COLORS, estimateReadTime } from "@/util/lesson-helpers";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { ChevronRight, Clock } from "lucide-react";
 
-
-export function LessonCard({ lesson, onClick, index }: { lesson: Lesson; onClick: () => void; index: number }) {
+export function LessonCard({
+  lesson,
+  onClick,
+  index,
+}: {
+  lesson: Lesson;
+  onClick: () => void;
+  index: number;
+}) {
   const diff = DIFF_COLORS[lesson.difficulty];
   const readTime = estimateReadTime(lesson);
 
@@ -19,6 +26,9 @@ export function LessonCard({ lesson, onClick, index }: { lesson: Lesson; onClick
       role="button"
       position="relative"
       overflow="hidden"
+      display="flex"
+      flexDirection="column"
+      height="100%"
       _hover={{
         borderColor: `${lesson.accentColor}55`,
         transform: "translateY(-4px)",
@@ -29,6 +39,7 @@ export function LessonCard({ lesson, onClick, index }: { lesson: Lesson; onClick
       <Box
         h="3px"
         bg={`linear-gradient(90deg, ${lesson.accentColor}, ${lesson.accentColor}44)`}
+        flexShrink={0}
       />
 
       {/* Ambient glow */}
@@ -45,9 +56,9 @@ export function LessonCard({ lesson, onClick, index }: { lesson: Lesson; onClick
         pointerEvents="none"
       />
 
-      <Box p="22px">
+      <Box p="22px" flex="1" display="flex" flexDirection="column">
         {/* Header row */}
-        <Flex justify="space-between" align="center" mb="14px">
+        <Flex justify="space-between" align="center" mb="14px" flexShrink={0}>
           <Flex
             w="40px"
             h="40px"
@@ -82,7 +93,7 @@ export function LessonCard({ lesson, onClick, index }: { lesson: Lesson; onClick
         </Flex>
 
         {/* Lesson number + subtitle */}
-        <Flex align="center" gap="6px" mb="5px">
+        <Flex align="center" gap="6px" mb="5px" flexShrink={0}>
           <Text
             fontSize="9px"
             color="var(--text-ghost)"
@@ -110,16 +121,30 @@ export function LessonCard({ lesson, onClick, index }: { lesson: Lesson; onClick
           fontFamily="'Courier New', monospace"
           letterSpacing="-0.02em"
           lineHeight="1.3"
+          flexShrink={0}
         >
           {lesson.title}
         </Text>
 
-        <Text fontSize="12.5px" color="var(--text-muted)" mb="16px" lineHeight="1.65">
+        <Text
+          fontSize="12.5px"
+          color="var(--text-muted)"
+          mb="16px"
+          lineHeight="1.65"
+          flexShrink={0}
+        >
           {lesson.description}
         </Text>
 
-        {/* Topics pills */}
-        <Flex gap="5px" wrap="wrap" mb="18px" minH="22px">
+        {/* Topics pills - this will grow but with constraints */}
+        <Flex
+          gap="5px"
+          wrap="wrap"
+          mb="18px"
+          minH="22px"
+          flex="1"
+          align="flex-start"
+        >
           {lesson.topics.slice(0, 4).map((t) => (
             <Text
               key={t}
@@ -136,14 +161,20 @@ export function LessonCard({ lesson, onClick, index }: { lesson: Lesson; onClick
             </Text>
           ))}
           {lesson.topics.length > 4 && (
-            <Text fontSize="10px" color="var(--text-ghost)" px="2px" py="2px" fontFamily="monospace">
+            <Text
+              fontSize="10px"
+              color="var(--text-ghost)"
+              px="2px"
+              py="2px"
+              fontFamily="monospace"
+            >
               +{lesson.topics.length - 4}
             </Text>
           )}
         </Flex>
 
-        {/* Footer */}
-        <Flex align="center" justify="space-between">
+        {/* Footer - now pinned to bottom */}
+        <Flex align="center" justify="space-between" flexShrink={0} mt="auto">
           <Flex align="center" gap="5px" color="var(--text-ghost)">
             <Clock size={11} />
             <Text fontSize="11px" fontFamily="monospace">
@@ -166,3 +197,4 @@ export function LessonCard({ lesson, onClick, index }: { lesson: Lesson; onClick
     </Box>
   );
 }
+
