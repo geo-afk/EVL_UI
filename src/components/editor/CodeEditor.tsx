@@ -8,7 +8,19 @@ import {
 } from "@monaco-editor/react";
 import * as Monaco from "monaco-editor";
 import { useRef, useState, useCallback } from "react";
-import { Play, Cpu, AlertCircle, Download, Upload, TriangleAlert, X, Wrench, BookOpen, Link, Check } from "lucide-react";
+import {
+  Play,
+  Cpu,
+  AlertCircle,
+  Download,
+  Upload,
+  TriangleAlert,
+  X,
+  Wrench,
+  BookOpen,
+  Link,
+  Check,
+} from "lucide-react";
 import { ReferencePanel } from "./ReferencePanel";
 import { setup_eval, updateDiagnostics } from "../../eval/lsp/setup";
 import { retrieveCodeDiagnostics } from "../../eval/lsp/validator";
@@ -96,7 +108,10 @@ const ExportErrorDialog = ({
       inset="0"
       zIndex={1000}
       bg="rgba(0,0,0,0.6)"
-      style={{ animation: "backdropIn 0.15s ease", backdropFilter: "blur(2px)" }}
+      style={{
+        animation: "backdropIn 0.15s ease",
+        backdropFilter: "blur(2px)",
+      }}
       onClick={onCancel}
     />
 
@@ -106,7 +121,10 @@ const ExportErrorDialog = ({
       top="50%"
       left="50%"
       zIndex={1001}
-      style={{ transform: "translate(-50%, -50%)", animation: "dialogIn 0.18s ease" }}
+      style={{
+        transform: "translate(-50%, -50%)",
+        animation: "dialogIn 0.18s ease",
+      }}
       bg="var(--bg-panel)"
       border="1px solid #5a1e1e"
       borderRadius="10px"
@@ -145,7 +163,11 @@ const ExportErrorDialog = ({
             >
               Export with errors?
             </Text>
-            <Text fontSize="12px" color="var(--text-secondary)" lineHeight="1.6">
+            <Text
+              fontSize="12px"
+              color="var(--text-secondary)"
+              lineHeight="1.6"
+            >
               Your code has{" "}
               <Text as="span" color="#f87171" fontWeight="600">
                 {errorCount} {errorCount === 1 ? "error" : "errors"}
@@ -330,7 +352,7 @@ export const CodeEditor = ({
   isAILoading,
   isRunning = false,
   onShare,
-  onEditorMount,  
+  onEditorMount,
 }: CodeEditorProps) => {
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof Monaco | null>(null);
@@ -338,8 +360,8 @@ export const CodeEditor = ({
   const [errors, setErrors] = useState<number>(0);
   const [toast, setToast] = useState<ToastState>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const [showRef,      setShowRef]      = useState(false);
-  const [shareCopied,  setShareCopied]  = useState(false);
+  const [showRef, setShowRef] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeTheme, setActiveTheme] = useState<EditorTheme>(() => {
     const savedId = localStorage.getItem("editorThemeId");
@@ -467,14 +489,18 @@ export const CodeEditor = ({
     });
 
     // Custom keybinding: Ctrl+? to toggle quick reference
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Slash, () => {
-      setShowRef((v) => !v);
-    });
-
+    editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Slash,
+      () => {
+        setShowRef((v) => !v);
+      },
+    );
     // Custom keybinding: Ctrl+Shift+S to share
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyS,
-      () => { onShare(); },
+      () => {
+        onShare();
+      },
     );
 
     // ── Diagnostics + debounced autocomplete prefetch ─────────────────────
@@ -488,7 +514,8 @@ export const CodeEditor = ({
         const markers = monaco.editor.getModelMarkers({ resource: model.uri });
 
         const errCount = markers.filter(
-          (m: Monaco.editor.IMarker) => m.severity === monaco.MarkerSeverity.Error,
+          (m: Monaco.editor.IMarker) =>
+            m.severity === monaco.MarkerSeverity.Error,
         ).length;
 
         const warnCount = markers.filter(
@@ -639,17 +666,17 @@ export const CodeEditor = ({
           onMouseEnter={(e) => {
             const b = e.currentTarget as HTMLButtonElement;
             if (!showRef) {
-              b.style.background  = "var(--bg-elevated)";
+              b.style.background = "var(--bg-elevated)";
               b.style.borderColor = "var(--border)";
-              b.style.color       = "var(--text-primary)";
+              b.style.color = "var(--text-primary)";
             }
           }}
           onMouseLeave={(e) => {
             const b = e.currentTarget as HTMLButtonElement;
             if (!showRef) {
-              b.style.background  = "transparent";
+              b.style.background = "transparent";
               b.style.borderColor = "transparent";
-              b.style.color       = "var(--text-secondary)";
+              b.style.color = "var(--text-secondary)";
             }
           }}
         >
@@ -684,16 +711,16 @@ export const CodeEditor = ({
           onMouseEnter={(e) => {
             if (!code.trim() || shareCopied) return;
             const b = e.currentTarget as HTMLButtonElement;
-            b.style.background  = "var(--bg-elevated)";
+            b.style.background = "var(--bg-elevated)";
             b.style.borderColor = "var(--border)";
-            b.style.color       = "var(--text-primary)";
+            b.style.color = "var(--text-primary)";
           }}
           onMouseLeave={(e) => {
             if (shareCopied) return;
             const b = e.currentTarget as HTMLButtonElement;
-            b.style.background  = "transparent";
+            b.style.background = "transparent";
             b.style.borderColor = "transparent";
-            b.style.color       = "var(--text-secondary)";
+            b.style.color = "var(--text-secondary)";
           }}
         >
           {shareCopied ? <Check size={14} /> : <Link size={14} />}
@@ -896,7 +923,7 @@ export const CodeEditor = ({
           fontFamily="monospace"
           letterSpacing="0.05em"
         >
-          · Ctrl+Enter to run · Ctrl+/ for reference · Ctrl+Shift+S to share
+          · Ctrl+Enter to run · Ctrl+? for reference · Ctrl+Shift+S to share
         </Text>
         {isRunning && (
           <Text
