@@ -299,11 +299,13 @@ const ToolbarIconBtn = ({
   title,
   onClick,
   disabled = false,
+  active = false,
 }: {
   icon: React.ElementType;
   title: string;
   onClick: () => void;
   disabled?: boolean;
+  active?: boolean;
 }) => (
   <button
     onClick={onClick}
@@ -315,24 +317,28 @@ const ToolbarIconBtn = ({
       justifyContent: "center",
       width: "30px",
       height: "30px",
-      background: "transparent",
-      border: "1px solid transparent",
+      background: active ? "var(--accent-dim)" : "transparent",
+      border: `1px solid ${active ? "var(--accent-border)" : "transparent"}`,
       borderRadius: "6px",
-      color: disabled ? "var(--text-ghost)" : "var(--text-secondary)",
+      color: active
+        ? "var(--accent)"
+        : disabled
+          ? "var(--text-ghost)"
+          : "var(--text-secondary)",
       cursor: disabled ? "not-allowed" : "pointer",
       transition: "all 0.15s ease",
       flexShrink: 0,
       opacity: disabled ? 0.4 : 1,
     }}
     onMouseEnter={(e) => {
-      if (disabled) return;
+      if (disabled || active) return;
       const b = e.currentTarget as HTMLButtonElement;
       b.style.background = "var(--bg-elevated)";
       b.style.borderColor = "var(--border)";
       b.style.color = "var(--text-primary)";
     }}
     onMouseLeave={(e) => {
-      if (disabled) return;
+      if (disabled || active) return;
       const b = e.currentTarget as HTMLButtonElement;
       b.style.background = "transparent";
       b.style.borderColor = "transparent";
@@ -373,6 +379,8 @@ export const CodeEditor = ({
 
   // Debounce timer ref for autocomplete
   const autocompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autocompleteRequestId = useRef(0);
+  const autocompleteAbortController = useRef<AbortController | null>(null);
   // Latest pending inline completion so the provider can read it synchronously
   const pendingCompletion = useRef<string>("");
 
@@ -418,7 +426,6 @@ export const CodeEditor = ({
 
   const handleFixErrors = useCallback(() => {
     setShowExportDialog(false);
-    // Focus the editor so the user can start fixing immediately
     editorRef.current?.focus();
   }, []);
 
@@ -431,12 +438,10 @@ export const CodeEditor = ({
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      // Always reset so the same file can be re-imported if needed
       e.target.value = "";
 
       if (!file) return;
 
-      // Extension validation
       if (!file.name.toLowerCase().endsWith(".eval")) {
         showToast(
           `"${file.name}" is not a .eval file — import rejected`,
@@ -479,23 +484,23 @@ export const CodeEditor = ({
     onEditorMount?.(monaco, editor);
     editor.focus();
 
-    // Register all themes now that monaco is available
     registerAllThemes(monaco);
     monaco.editor.setTheme(activeTheme.id);
 
-    // Custom keybinding: Cmd/Ctrl+Enter to run
+    // Ctrl+Enter → Run
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       onRun();
     });
 
-    // Custom keybinding: Ctrl+? to toggle quick reference
+    // Ctrl+Shift+/ → Quick reference
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Slash,
       () => {
         setShowRef((v) => !v);
       },
     );
-    // Custom keybinding: Ctrl+Shift+S to share
+
+    // Ctrl+Shift+S → Share
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyS,
       () => {
@@ -525,8 +530,12 @@ export const CodeEditor = ({
         setErrors(errCount + warnCount);
       }
 
-      // Debounce: cancel any previous pending request then schedule a new one
       if (autocompleteTimer.current) clearTimeout(autocompleteTimer.current);
+      autocompleteRequestId.current += 1;
+      const requestId = autocompleteRequestId.current;
+
+      autocompleteAbortController.current?.abort();
+      autocompleteAbortController.current = new AbortController();
       pendingCompletion.current = "";
 
       autocompleteTimer.current = setTimeout(async () => {
@@ -543,20 +552,33 @@ export const CodeEditor = ({
         if (!lineText) return;
 
         try {
-          const data = await fetchAIComplete(lineText);
-          if (data.completion) {
+          const data = await fetchAIComplete(lineText, {
+            signal: autocompleteAbortController.current?.signal,
+          });
+
+          if (requestId !== autocompleteRequestId.current) return;
+
+          if (data?.completion) {
             pendingCompletion.current = data.completion;
-            // Trigger Monaco's inline suggestion widget to re-evaluate
-            editor.trigger("ai", "editor.action.inlineSuggest.trigger", {});
+
+            // Only trigger inline suggestions if editor still has focus and the request is current.
+            if (requestId === autocompleteRequestId.current) {
+              try {
+                editor.trigger("ai", "editor.action.inlineSuggest.trigger", {});
+              } catch {
+                // Ignore editor trigger exceptions; it should never block typing.
+              }
+            }
           }
-        } catch {
+        } catch (error) {
+          if ((error as Error)?.name === "AbortError") return;
+          pendingCompletion.current = "";
           // Silently ignore autocomplete errors — non-critical
         }
       }, AUTOCOMPLETE_DEBOUNCE_MS);
     });
 
     // ── Inline completions provider ───────────────────────────────────────
-    // Returns whatever was prefetched by the debounce above
     monaco.languages.registerInlineCompletionsProvider(EVAL_LANGUAGE_ID, {
       provideInlineCompletions: (
         _model: Monaco.editor.ITextModel,
@@ -629,9 +651,8 @@ export const CodeEditor = ({
           onSelect={handleThemeSelect}
         />
 
-        {/* Import / Export buttons */}
+        {/* Import / Export */}
         <Box w="1px" h="20px" bg="var(--border-subtle)" flexShrink={0} />
-
         <ToolbarIconBtn
           icon={Upload}
           title="Import .eval file"
@@ -644,44 +665,14 @@ export const CodeEditor = ({
           disabled={!code.trim()}
         />
 
-        {/* Quick Reference toggle */}
+        {/* Quick Reference + Parse Tree */}
         <Box w="1px" h="20px" bg="var(--border-subtle)" flexShrink={0} />
-        <button
+        <ToolbarIconBtn
+          icon={BookOpen}
+          title="Quick Reference (Ctrl+Shift+/)"
           onClick={() => setShowRef((v) => !v)}
-          title="Quick Reference (Ctrl+/)"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "30px",
-            height: "30px",
-            background: showRef ? "var(--accent-dim)" : "transparent",
-            border: `1px solid ${showRef ? "var(--accent-border)" : "transparent"}`,
-            borderRadius: "6px",
-            color: showRef ? "var(--accent)" : "var(--text-secondary)",
-            cursor: "pointer",
-            transition: "all 0.15s ease",
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            const b = e.currentTarget as HTMLButtonElement;
-            if (!showRef) {
-              b.style.background = "var(--bg-elevated)";
-              b.style.borderColor = "var(--border)";
-              b.style.color = "var(--text-primary)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            const b = e.currentTarget as HTMLButtonElement;
-            if (!showRef) {
-              b.style.background = "transparent";
-              b.style.borderColor = "transparent";
-              b.style.color = "var(--text-secondary)";
-            }
-          }}
-        >
-          <BookOpen size={14} />
-        </button>
+          active={showRef}
+        />
 
         {/* Share button */}
         <button
@@ -778,46 +769,6 @@ export const CodeEditor = ({
 
         {/* Divider */}
         <Box w="1px" h="20px" bg="#2a2a38" />
-
-        {/* AI Run Button */}
-        {/* <button */}
-        {/*   onClick={onAIRun} */}
-        {/*   disabled={isAILoading || isRunning || !code.trim()} */}
-        {/*   title="Ask AI to simulate running this code" */}
-        {/*   style={{ */}
-        {/*     display: "flex", */}
-        {/*     alignItems: "center", */}
-        {/*     gap: "6px", */}
-        {/*     padding: "5px 14px", */}
-        {/*     background: isAILoading ? "var(--bg-surface)" : "var(--accent-dim)", */}
-        {/*     border: `1px solid ${ */}
-        {/*       isAILoading ? "var(--border)" : "var(--accent-border)" */}
-        {/*     }`, */}
-        {/*     borderRadius: "6px", */}
-        {/*     color: isAILoading ? "var(--text-muted)" : "var(--accent)", */}
-        {/*     fontSize: "12px", */}
-        {/*     fontWeight: "600", */}
-        {/*     cursor: isAILoading || isRunning ? "not-allowed" : "pointer", */}
-        {/*     letterSpacing: "0.04em", */}
-        {/*     transition: "all 0.15s ease", */}
-        {/*     opacity: isAILoading || isRunning ? 0.6 : 1, */}
-        {/*     fontFamily: "'JetBrains Mono', 'Courier New', monospace", */}
-        {/*   }} */}
-        {/*   onMouseEnter={(e) => { */}
-        {/*     if (!isAILoading) */}
-        {/*       (e.currentTarget as HTMLButtonElement).style.filter = */}
-        {/*         "brightness(1.2)"; */}
-        {/*   }} */}
-        {/*   onMouseLeave={(e) => { */}
-        {/*     if (!isAILoading) */}
-        {/*       (e.currentTarget as HTMLButtonElement).style.filter = ""; */}
-        {/*   }} */}
-        {/* > */}
-        {/*   <Cpu size={12} /> */}
-        {/*   AI RUN */}
-        {/* </button> */}
-
-        {/* AI Insights Button */}
 
         {/* AI Insights Button */}
         <button
@@ -923,7 +874,8 @@ export const CodeEditor = ({
           fontFamily="monospace"
           letterSpacing="0.05em"
         >
-          · Ctrl+Enter to run · Ctrl+? for reference · Ctrl+Shift+S to share
+          · Ctrl+Enter to run · Ctrl+Shift+/ for reference · Ctrl+Shift+T for
+          parse tree · Ctrl+Shift+S to share
         </Text>
         {isRunning && (
           <Text

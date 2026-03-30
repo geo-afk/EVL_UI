@@ -9,6 +9,7 @@ export async function fetchAIInsights(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code }),
+
   });
   if (!res.ok) {
     const text = await res.text();
@@ -19,11 +20,13 @@ export async function fetchAIInsights(
 
 export async function fetchAIComplete(
   line: string,
+  options?: { signal?: AbortSignal },
 ): Promise<{ completion: string }> {
   const res = await fetch(`${AI_BASE}/ai/complete`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ line }),
+    signal: options?.signal,
   });
   if (!res.ok) {
     throw new Error(`Server error ${res.status}`);
@@ -38,6 +41,7 @@ export async function fetchRunCode(code: string): Promise<AnalysisResponse> {
     body: JSON.stringify({ code }),
   });
   if (!res.ok) {
+
     const text = await res.text();
     throw new Error(`Server error ${res.status}: ${text}`);
   }
