@@ -115,7 +115,7 @@ export function setup_eval(monacoInstance: typeof monaco) {
       const argIndex = match[2].split(",").length - 1;
 
       type FunctionName = keyof typeof FUNCTION_SIGNATURES;
-      const signature: any = FUNCTION_SIGNATURES[fnName as FunctionName];
+      const signature = FUNCTION_SIGNATURES[fnName as FunctionName];
       if (!signature) return null;
 
       return {
@@ -124,7 +124,7 @@ export function setup_eval(monacoInstance: typeof monaco) {
           activeSignature: 0,
           activeParameter: argIndex,
         },
-        dispose() {},
+        dispose() { },
       };
     },
   });
@@ -153,8 +153,8 @@ export function updateDiagnostics(code: string, monacoInstance: typeof monaco) {
   }
 }
 
-export function setError(errors: any, monacoInstance: typeof monaco) {
-  const errorMarkers = errors.map((err: any) => ({
+export function setError(errors: Array<{ line_number?: number; column_number?: number; message: string }>, monacoInstance: typeof monaco) {
+  const errorMarkers = errors.map((err) => ({
     startLineNumber: err.line_number || 1,
     startColumn: err.column_number || 1,
     endLineNumber: err.line_number || 1,

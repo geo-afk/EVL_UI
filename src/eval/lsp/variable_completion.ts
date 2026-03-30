@@ -32,20 +32,59 @@ export function extractDeclaredVariables(
   const seen = new Set<string>();
   const result: DeclaredVariable[] = [];
 
-  const lines = code.split("\n");
-  const limit = Math.min(cursorLine, lines.length); // only scan up to cursor
+  // First, strip all comments from the code
+  const rawLines = code.split("\n");
+  let inBlockComment = false;
+  const processedLines: string[] = [];
+
+  for (let i = 0; i < rawLines.length; i++) {
+    let line = rawLines[i];
+
+    if (inBlockComment) {
+      const endCommentIndex = line.indexOf("*/");
+      if (endCommentIndex !== -1) {
+        line = line.substring(endCommentIndex + 2);
+        inBlockComment = false;
+        processedLines.push(line);
+      } else {
+        processedLines.push("");
+      }
+    } else {
+      const startCommentIndex = line.indexOf("/*");
+      if (startCommentIndex !== -1) {
+        const endCommentIndex = line.indexOf("*/", startCommentIndex + 2);
+        if (endCommentIndex !== -1) {
+          line = line.substring(0, startCommentIndex) + line.substring(endCommentIndex + 2);
+          processedLines.push(line);
+        } else {
+          line = line.substring(0, startCommentIndex);
+          processedLines.push(line);
+          inBlockComment = true;
+        }
+      } else {
+        processedLines.push(line);
+      }
+    }
+  }
+
+  const lines = processedLines;
+  const limit = Math.min(cursorLine, lines.length);
 
   for (let i = 0; i < limit; i++) {
-    // Strip inline comments before matching
+    // Strip inline comments after block comments are handled
     const stripped = lines[i]
       .replace(/\/\/.*$/, "")
       .replace(/;$/, "")
       .trim();
+
+    // Skip if this line is now empty (was a comment line)
+    if (!stripped) continue;
+
     const m = stripped.match(DECL_RE);
     if (!m) continue;
 
     const [, constKw, type, name, rawValue] = m;
-    if (seen.has(name)) continue; // first declaration wins
+    if (seen.has(name)) continue;
 
     seen.add(name);
     result.push({

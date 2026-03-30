@@ -25,6 +25,7 @@ export interface SymbolInfo {
   declaredLine: number;
   isInitialized: boolean;
   usageCount: number;
+  isForwardDeclared: boolean;
 }
 
 // ─── SymbolTable ──────────────────────────────────────────────────────────────
@@ -63,6 +64,7 @@ export class SymbolTable {
    * emit unused-variable warnings before the scope disappears.
    */
   popScope(): SymbolInfo[] {
+    if (this.scopes.length === 1) return [];
     const scope = this.scopes.pop() ?? new Map<string, SymbolInfo>();
     return [...scope.values()];
   }
@@ -85,6 +87,7 @@ export class SymbolTable {
     isConst: boolean,
     line: number,
     initialized: boolean,
+    isForwardDeclared = false,
   ): SymbolInfo | null {
     const scope = this.currentScope;
     if (scope.has(name)) return null;
@@ -95,8 +98,22 @@ export class SymbolTable {
       declaredLine: line,
       isInitialized: initialized,
       usageCount: 0,
+      isForwardDeclared,
     };
     scope.set(name, info);
+    return info;
+  }
+
+  materializeForwardDeclaration(
+    name: string,
+    line: number,
+    initialized: boolean,
+  ): SymbolInfo | undefined {
+    const info = this.currentScope.get(name);
+    if (!info?.isForwardDeclared) return undefined;
+    info.declaredLine = line;
+    info.isInitialized = initialized;
+    info.isForwardDeclared = false;
     return info;
   }
 
@@ -169,16 +186,16 @@ const BUILTIN_CONSTANTS = new Map<string, EVALType>([
 const VALID_TYPES = new Set<string>(["int", "float", "string", "bool"]);
 
 const BUILTIN_FUNCTIONS: Record<string, { minArgs: number; maxArgs: number }> =
-  {
-    cast: { minArgs: 2, maxArgs: 2 },
-    pow: { minArgs: 2, maxArgs: 2 },
-    sqrt: { minArgs: 1, maxArgs: 1 },
-    min: { minArgs: 2, maxArgs: 2 },
-    max: { minArgs: 2, maxArgs: 2 },
-    round: { minArgs: 1, maxArgs: 1 },
-    print: { minArgs: 1, maxArgs: Infinity },
-    abs: { minArgs: 1, maxArgs: 1 },
-  };
+{
+  cast: { minArgs: 2, maxArgs: 2 },
+  pow: { minArgs: 2, maxArgs: 2 },
+  sqrt: { minArgs: 1, maxArgs: 1 },
+  min: { minArgs: 2, maxArgs: 2 },
+  max: { minArgs: 2, maxArgs: 2 },
+  round: { minArgs: 1, maxArgs: 1 },
+  print: { minArgs: 1, maxArgs: Infinity },
+  abs: { minArgs: 1, maxArgs: 1 },
+};
 
 /**
  * "fixed-float"  → always returns float  (sqrt, pow)
@@ -237,8 +254,26 @@ function splitTopLevelArgs(argsStr: string): string[] {
   const args: string[] = [];
   let depth = 0,
     cur = "";
+  let inString = false;
+  let escaping = false;
+
   for (const ch of argsStr) {
-    if (ch === "(" || ch === "[") {
+    if (inString) {
+      cur += ch;
+      if (escaping) {
+        escaping = false;
+      } else if (ch === "\\") {
+        escaping = true;
+      } else if (ch === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === "\"") {
+      inString = true;
+      cur += ch;
+    } else if (ch === "(" || ch === "[") {
       depth++;
       cur += ch;
     } else if (ch === ")" || ch === "]") {
@@ -261,22 +296,70 @@ function extractAllCalls(
   expr: string,
 ): Array<{ name: string; args: string[] }> {
   const result: Array<{ name: string; args: string[] }> = [];
-  const re = /([a-zA-Z_]\w*)\s*\(/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(expr)) !== null) {
-    const name = m[1];
-    const parenOpen = m.index + m[0].length;
-    let depth = 1,
-      j = parenOpen;
-    while (j < expr.length && depth > 0) {
-      if (expr[j] === "(") depth++;
-      else if (expr[j] === ")") depth--;
-      j++;
+  let inString = false;
+  let escaping = false;
+
+  for (let i = 0; i < expr.length; i++) {
+    const ch = expr[i];
+
+    if (inString) {
+      if (escaping) {
+        escaping = false;
+      } else if (ch === "\\") {
+        escaping = true;
+      } else if (ch === "\"") {
+        inString = false;
+      }
+      continue;
     }
+
+    if (ch === "\"") {
+      inString = true;
+      continue;
+    }
+
+    if (!/[a-zA-Z_]/.test(ch)) continue;
+    if (i > 0 && /\w/.test(expr[i - 1])) continue;
+
+    let j = i + 1;
+    while (j < expr.length && /\w/.test(expr[j])) j++;
+
+    let k = j;
+    while (k < expr.length && /\s/.test(expr[k])) k++;
+    if (expr[k] !== "(") continue;
+
+    const name = expr.slice(i, j);
+    let depth = 1;
+    let end = k + 1;
+    let nestedInString = false;
+    let nestedEscaping = false;
+
+    while (end < expr.length && depth > 0) {
+      const innerCh = expr[end];
+      if (nestedInString) {
+        if (nestedEscaping) {
+          nestedEscaping = false;
+        } else if (innerCh === "\\") {
+          nestedEscaping = true;
+        } else if (innerCh === "\"") {
+          nestedInString = false;
+        }
+      } else if (innerCh === "\"") {
+        nestedInString = true;
+      } else if (innerCh === "(") {
+        depth++;
+      } else if (innerCh === ")") {
+        depth--;
+      }
+      end++;
+    }
+
     result.push({
       name,
-      args: splitTopLevelArgs(expr.slice(parenOpen, j - 1)),
+      args: splitTopLevelArgs(expr.slice(k + 1, end - 1)),
     });
+
+    i = k;
   }
   return result;
 }
@@ -288,6 +371,82 @@ function extractAllCalls(
 function findTokenColumn(rawLine: string, token: string): number | undefined {
   const idx = rawLine.indexOf(token);
   return idx >= 0 ? idx + 1 : undefined;
+}
+
+/**
+ * Mirrors the lexer by removing line and block comments before validation,
+ * while preserving line breaks and character positions for diagnostics.
+ */
+function stripCommentsPreserveLayout(code: string): string {
+  let result = "";
+  let inString = false;
+  let inLineComment = false;
+  let inBlockComment = false;
+  let escaping = false;
+
+  for (let i = 0; i < code.length; i++) {
+    const ch = code[i];
+    const next = code[i + 1];
+
+    if (inLineComment) {
+      if (ch === "\r" || ch === "\n") {
+        inLineComment = false;
+        result += ch;
+      } else {
+        result += " ";
+      }
+      continue;
+    }
+
+    if (inBlockComment) {
+      if (ch === "*" && next === "/") {
+        result += "  ";
+        i++;
+        inBlockComment = false;
+      } else if (ch === "\r" || ch === "\n") {
+        result += ch;
+      } else {
+        result += " ";
+      }
+      continue;
+    }
+
+    if (inString) {
+      result += ch;
+      if (escaping) {
+        escaping = false;
+      } else if (ch === "\\") {
+        escaping = true;
+      } else if (ch === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === "\"") {
+      inString = true;
+      result += ch;
+      continue;
+    }
+
+    if (ch === "/" && next === "/") {
+      result += "  ";
+      i++;
+      inLineComment = true;
+      continue;
+    }
+
+    if (ch === "/" && next === "*") {
+      result += "  ";
+      i++;
+      inBlockComment = true;
+      continue;
+    }
+
+    result += ch;
+  }
+
+  return result;
 }
 
 // ─── Type inference ───────────────────────────────────────────────────────────
@@ -384,8 +543,7 @@ function checkUndeclaredRefs(
   symbols: SymbolTable,
   ln: number,
   currentVar: string,
-  _error: (l: number, m: string) => void,
-  warn: (l: number, m: string) => void,
+  warn: SimpleDiagnosticReporter,
 ): void {
   const stripped = expr
     .replace(/"[^"]*"/g, "")
@@ -422,8 +580,8 @@ function validateFunctionCalls(
   ln: number,
   declaredType: EVALType | undefined,
   symbols: SymbolTable,
-  error: (l: number, m: string) => void,
-  warn: (l: number, m: string) => void,
+  error: SimpleDiagnosticReporter,
+  warn: SimpleDiagnosticReporter,
 ): void {
   const calls = extractAllCalls(expr);
   if (calls.length === 0) return;
@@ -473,7 +631,7 @@ function validateFunctionCalls(
         error(
           ln,
           `Cast type '${castTargetType}' does not match declared variable type '${declaredType}' — ` +
-            `use cast(expr, ${declaredType})`,
+          `use cast(expr, ${declaredType})`,
         );
       }
       continue; // cast's second arg is a type keyword — skip homogeneity check
@@ -495,8 +653,8 @@ function validateFunctionCalls(
           error(
             ln,
             `Function '${fnName}' requires all arguments to be the same type, ` +
-              `but received mixed types: ${typeSummary}. ` +
-              `Use cast() to convert arguments to a common type.`,
+            `but received mixed types: ${typeSummary}. ` +
+            `Use cast() to convert arguments to a common type.`,
           );
         } else if (declaredType && fnName === outermostCallName) {
           // ── 4a. Return type check for "arg0" functions ───────────────────
@@ -515,8 +673,8 @@ function validateFunctionCalls(
             error(
               ln,
               `Function '${fnName}' with '${firstType}' arguments returns '${returnType}', ` +
-                `but variable is declared as '${declaredType}' — ` +
-                `change the variable type to '${returnType}' or cast the result`,
+              `but variable is declared as '${declaredType}' — ` +
+              `change the variable type to '${returnType}' or cast the result`,
             );
           }
         }
@@ -534,7 +692,7 @@ function validateFunctionCalls(
         error(
           ln,
           `Function '${fnName}' always returns 'float', but variable is declared as 'int' — ` +
-            `change the variable type to 'float' or wrap with cast(${fnName}(...), int)`,
+          `change the variable type to 'float' or wrap with cast(${fnName}(...), int)`,
         );
       }
       // fixed-int (round) assigned to float → safe, no error
@@ -544,14 +702,24 @@ function validateFunctionCalls(
 
 // ─── Main analyzeCode ─────────────────────────────────────────────────────────
 
+// eslint-disable-next-line no-unused-vars
+interface SimpleDiagnosticReporter {
+  (line: number, message: string): void;
+}
+
+// eslint-disable-next-line no-unused-vars
+interface DiagnosticReporter {
+  (line: number, message: string, column?: number, endColumn?: number): void;
+}
+
 function analyzeCode(code: string): Diagnostics[] {
   const diagnostics: Diagnostics[] = [];
-  const rawLines = code.split("\n");
+  const sanitizedCode = stripCommentsPreserveLayout(code);
+  const rawLines = sanitizedCode.split(/\r?\n/);
 
-  // Strip inline comments and trailing semicolons, then trim whitespace
+  // Strip trailing semicolons, then trim whitespace.
   const lines = rawLines.map((l) =>
     l
-      .replace(/\/\/.*$/, "")
       .replace(/;$/, "")
       .trim(),
   );
@@ -578,57 +746,62 @@ function analyzeCode(code: string): Diagnostics[] {
     });
   }
 
-  // ── PASS 1: forward-declaration scan (global scope only) ────────────────────
-  // Pre-registers top-level (brace-depth 0) variable declarations so that
-  // forward references in global-scope expressions resolve correctly.
-  //
-  // IMPORTANT: inner-scope declarations (inside if / while / for / try blocks)
-  // are intentionally excluded here.  If they were registered into the global
-  // scope, lookup() would find them from any outer scope and the duplicate-
-  // declaration check in PASS 2 would incorrectly fire when a variable with
-  // the same name is declared in an enclosing scope (valid shadowing).
-  // Inner declarations are registered into the correct nested scope during PASS 2.
-  {
-    let depth = 0;
-    lines.forEach((t, i) => {
-      const opens = (t.match(/\{/g) ?? []).length;
-      const closes = (t.match(/\}/g) ?? []).length;
+  // PASS 1: Forward declaration scan
+  performForwardDeclarationScan(lines, symbols);
 
-      // Only register at the global level
-      if (depth === 0) {
-        const mDecl = t.match(DECL_RE);
-        if (mDecl) {
-          const [, constKw, type, name] = mDecl;
+  // PASS 2: Full validation
+  performFullValidation(lines, rawLines, symbols, error, warn);
+
+  return diagnostics;
+}
+
+// ─── Forward Declaration Scan (PASS 1) ──────────────────────────────────────
+
+/**
+ * Pre-registers top-level variable declarations for forward reference resolution.
+ */
+function performForwardDeclarationScan(lines: string[], symbols: SymbolTable): void {
+  let depth = 0;
+  lines.forEach((t) => {
+    const opens = (t.match(/\{/g) ?? []).length;
+    const closes = (t.match(/\}/g) ?? []).length;
+
+    if (depth === 0) {
+      const mDecl = t.match(DECL_RE);
+      if (mDecl) {
+        const [, constKw, type, name] = mDecl;
+        if (!symbols.has(name))
+          symbols.declare(name, type as EVALType, !!constKw, 0, true, true);
+      } else {
+        const mNoAssign = t.match(DECL_NO_ASSIGN_RE);
+        if (mNoAssign) {
+          const [, constKw, type, name] = mNoAssign;
           if (!symbols.has(name))
-            symbols.declare(name, type as EVALType, !!constKw, i + 1, true);
-        } else {
-          const mNoAssign = t.match(DECL_NO_ASSIGN_RE);
-          if (mNoAssign) {
-            const [, constKw, type, name] = mNoAssign;
-            if (!symbols.has(name))
-              symbols.declare(name, type as EVALType, !!constKw, i + 1, false);
-          }
+            symbols.declare(name, type as EVALType, !!constKw, 0, false, true);
         }
       }
+    }
 
-      depth += opens - closes;
-    });
-  }
+    depth += opens - closes;
+  });
+}
 
-  // ── PASS 2: full validation ──────────────────────────────────────────────────
+// ─── Full Validation (PASS 2) ────────────────────────────────────────────────
 
-  // braceDepth tracks nesting purely for the insideTryCatch division-by-zero
-  // suppression logic.  Scope push/pop is now driven by counting { and } on
-  // each line so that if / else / while / for / try / catch all get their own
-  // nested scope automatically.
+/**
+ * Performs full line-by-line validation with scope management.
+ */
+function performFullValidation(
+  lines: string[],
+  rawLines: string[],
+  symbols: SymbolTable,
+  error: DiagnosticReporter,
+  warn: DiagnosticReporter,
+): void {
   let insideTryCatch = false;
   let braceDepth = 0;
   let tryStartDepth = -1;
 
-  /**
-   * Pop one scope level and emit unused-variable warnings for every symbol
-   * that was declared in it but never read after declaration.
-   */
   function closeScope(): void {
     const popped = symbols.popScope();
     for (const sym of popped) {
@@ -649,11 +822,7 @@ function analyzeCode(code: string): Diagnostics[] {
     const openBraces = (t.match(/\{/g) ?? []).length;
     const closeBraces = (t.match(/\}/g) ?? []).length;
 
-    // ── Scope pop: process every } BEFORE validating line content ────────────
-    //
-    //  This ensures that when we see `} else {` or a bare `}`, the inner scope
-    //  is closed (and unused-variable warnings emitted) before we push the next
-    //  scope for a following `{`.
+    // Scope pop
     for (let b = 0; b < closeBraces; b++) {
       braceDepth--;
       closeScope();
@@ -663,40 +832,21 @@ function analyzeCode(code: string): Diagnostics[] {
       }
     }
 
-    // ── try / catch bookkeeping (division-by-zero suppression only) ──────────
+    // try / catch bookkeeping
     if (/^try\s*\{/.test(t)) {
       insideTryCatch = true;
-      tryStartDepth = braceDepth - 1; // depth was already decremented above if
-      // there was a } on this line; for a plain
-      // `try {` closeBraces==0 so braceDepth is
-      // still the pre-open value — record it now
-      // before the push below increments it.
-      tryStartDepth = braceDepth; // re-assign: this is the depth OUTSIDE try
+      tryStartDepth = braceDepth;
     }
 
-    // ── } catch (id) {  /  bare catch ────────────────────────────────────────
-    //  The } was already handled above.  The { will be pushed below.
-    //  Skip all other content on this line.
     if (/^}?\s*catch\s*\(/.test(t)) {
-      // Push for the `{` that follows catch(...) is handled in the scope-push
-      // loop at the bottom of this iteration, so nothing extra needed here.
+      // Handled
     }
 
-    // ── Line content validation (skip bare brace-only lines) ─────────────────
     const isBraceOnly = /^[{}\s]+$/.test(t);
-
-    // ── Control-flow constructs — analyse conditions, then fall through ────────
-    //
-    //  These lines are NOT function calls.  We analyse any condition expression
-    //  for variable usage / undeclared refs, then set `isControlFlow = true` so
-    //  the content-validation block below is skipped.  Crucially we do NOT
-    //  `return` early — the scope-push loop at the bottom still needs to run so
-    //  that every `{` on the line opens a new scope.
     let isControlFlow = false;
 
     if (/^(if|else\s+if|while|for)\s*\(/.test(t)) {
       isControlFlow = true;
-      // Extract the condition so variables referenced inside are counted as reads.
       const parenOpen = t.indexOf("(");
       if (parenOpen !== -1) {
         let depth = 0,
@@ -714,7 +864,7 @@ function analyzeCode(code: string): Diagnostics[] {
         if (parenClose !== -1) {
           const condition = t.slice(parenOpen + 1, parenClose);
           markUsedRefs(condition, symbols);
-          checkUndeclaredRefs(condition, symbols, ln, "", error, warn);
+          checkUndeclaredRefs(condition, symbols, ln, "", warn);
           validateFunctionCalls(condition, ln, undefined, symbols, error, warn);
         }
       }
@@ -728,7 +878,7 @@ function analyzeCode(code: string): Diagnostics[] {
       const retExpr = t.replace(/^return\b\s*/, "");
       if (retExpr) {
         markUsedRefs(retExpr, symbols);
-        checkUndeclaredRefs(retExpr, symbols, ln, "", error, warn);
+        checkUndeclaredRefs(retExpr, symbols, ln, "", warn);
         validateFunctionCalls(retExpr, ln, undefined, symbols, error, warn);
       }
     } else if (/^(break|continue)\b/.test(t)) {
@@ -778,6 +928,7 @@ function analyzeCode(code: string): Diagnostics[] {
         .find((s) => s.name === varName);
       if (
         existingInCurrentScope &&
+        !existingInCurrentScope.isForwardDeclared &&
         existingInCurrentScope.declaredLine !== ln
       ) {
         warn(
@@ -793,6 +944,8 @@ function analyzeCode(code: string): Diagnostics[] {
       // same scope (PASS 1 already added global-scope vars).
       if (!existingInCurrentScope) {
         symbols.declare(varName, declaredType as EVALType, isConst, ln, true);
+      } else if (existingInCurrentScope.isForwardDeclared) {
+        symbols.materializeForwardDeclaration(varName, ln, true);
       }
 
       // ── Bool: RHS must be bool-typed ───────────────────────────────────────
@@ -802,7 +955,7 @@ function analyzeCode(code: string): Diagnostics[] {
           error(
             ln,
             `Cannot assign '${rhsType}' value to bool variable '${varName}' — ` +
-              `expected 'true', 'false', or a bool expression`,
+            `expected 'true', 'false', or a bool expression`,
             varCol,
           );
         }
@@ -827,7 +980,7 @@ function analyzeCode(code: string): Diagnostics[] {
           error(
             ln,
             `Float variable '${varName}' must be initialised with a float literal — ` +
-              `use ${trimmedExpr}.0 instead of ${trimmedExpr}`,
+            `use ${trimmedExpr}.0 instead of ${trimmedExpr}`,
           );
         }
 
@@ -862,7 +1015,7 @@ function analyzeCode(code: string): Diagnostics[] {
             error(
               ln,
               `Cast type '${castTarget}' does not match declared variable type ` +
-                `'${declaredType}' for '${varName}' — use cast(expr, ${declaredType})`,
+              `'${declaredType}' for '${varName}' — use cast(expr, ${declaredType})`,
             );
           } else {
             // ── Redundant cast: source is already the target type ─────────
@@ -904,7 +1057,7 @@ function analyzeCode(code: string): Diagnostics[] {
       }
 
       // ── Undeclared identifier references ──────────────────────────────────
-      checkUndeclaredRefs(trimmedExpr, symbols, ln, varName, error, warn);
+      checkUndeclaredRefs(trimmedExpr, symbols, ln, varName, warn);
 
       // ── Mark referenced identifiers as used ───────────────────────────────
       markUsedRefs(trimmedExpr, symbols);
@@ -925,6 +1078,7 @@ function analyzeCode(code: string): Diagnostics[] {
     // ── Incomplete declaration (no assignment) ────────────────────────────────
     if (DECL_NO_ASSIGN_RE.test(t)) {
       const m = t.match(DECL_NO_ASSIGN_RE)!;
+      symbols.materializeForwardDeclaration(m[3], ln, false);
       warn(ln, `Variable '${m[3]}' declared but never assigned`);
       return;
     }
@@ -957,7 +1111,7 @@ function analyzeCode(code: string): Diagnostics[] {
         error(
           ln,
           `Cannot reassign const variable '${varName}' ` +
-            `(declared on line ${sym.declaredLine}) — remove 'const' or use a new variable`,
+          `(declared on line ${sym.declaredLine}) — remove 'const' or use a new variable`,
           varCol,
         );
       } else {
@@ -972,7 +1126,7 @@ function analyzeCode(code: string): Diagnostics[] {
               warn(
                 ln,
                 `Compound assignment '${operator}=': assigning 'float' expression ` +
-                  `to 'int' variable '${varName}' — implicit conversion`,
+                `to 'int' variable '${varName}' — implicit conversion`,
                 varCol,
               );
             }
@@ -980,7 +1134,7 @@ function analyzeCode(code: string): Diagnostics[] {
             error(
               ln,
               `Compound assignment '${operator}=': cannot use '${rhsType}' ` +
-                `value with '${sym.type}' variable '${varName}'`,
+              `value with '${sym.type}' variable '${varName}'`,
               varCol,
             );
           }
@@ -1011,7 +1165,7 @@ function analyzeCode(code: string): Diagnostics[] {
         error(
           ln,
           `Cannot reassign const variable '${varName}' ` +
-            `(declared on line ${sym.declaredLine}) — remove 'const' or use a new variable`,
+          `(declared on line ${sym.declaredLine}) — remove 'const' or use a new variable`,
           varCol,
         );
       } else {
@@ -1079,9 +1233,7 @@ function analyzeCode(code: string): Diagnostics[] {
     }
   });
 
-  // ── POST-PASS: unused variable warnings ──────────────────────────────────────
-  // Any symbol still alive in the global scope that was never read after
-  // its declaration is considered unused.
+  // POST-PASS: unused variable warnings
   for (const sym of symbols.allSymbols()) {
     if (sym.usageCount === 0) {
       warn(
@@ -1090,8 +1242,6 @@ function analyzeCode(code: string): Diagnostics[] {
       );
     }
   }
-
-  return diagnostics;
 }
 
 // ─── Public entry point ───────────────────────────────────────────────────────

@@ -95,7 +95,7 @@ export function syntax_definition() {
         // Delimiters
         [/[{}]/, "delimiter.bracket"],
         [/[()]/, "delimiter.parenthesis"],
-        [/[\[\]]/, "delimiter.square"],
+        [/\[\]/, "delimiter.square"],
         [/[;,]/, "delimiter"],
 
         // Operators
