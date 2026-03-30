@@ -270,369 +270,369 @@ export const APP_THEMES: AppTheme[] = [
   },
 
   // ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
-  // MEDIUM-LIGHT THEMES (balanced, comfortable mid-tones)
+  // MEDIUM-LIGHT THEMES (now darker & more comfortable)
   // ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
-  // ── 8. BREEZE — soft sky blue, medium-light ────────────────────────────────
+  // ── 8. BREEZE — soft sky blue, darker tone ────────────────────────────────
   {
     id: "breeze",
     label: "Breeze",
     swatch: "#0ea5e9",
     vars: {
-      "--bg-base": "#eef2f8",
-      "--bg-panel": "#e8edf5",
-      "--bg-surface": "#f5f8fc",
-      "--bg-elevated": "#ffffff",
-      "--bg-code": "#eef3fa",
+      "--bg-base": "#e0e7f0",
+      "--bg-panel": "#d1dbe9",
+      "--bg-surface": "#f0f4fa",
+      "--bg-elevated": "#f8fafd",
+      "--bg-code": "#e6edf7",
 
-      "--border": "#dce3ec",
-      "--border-subtle": "#e6ecf3",
+      "--border": "#cbd5e1",
+      "--border-subtle": "#d9e2ef",
 
       "--text-primary": "#1e293b",
       "--text-secondary": "#475569",
-      "--text-muted": "#7e8a98",
-      "--text-ghost": "#b9c2ce",
+      "--text-muted": "#64748b",
+      "--text-ghost": "#94a3b8",
 
       "--accent": "#0ea5e9",
-      "--accent-dim": "rgba(14,165,233,0.10)",
-      "--accent-border": "rgba(14,165,233,0.25)",
-      "--accent-glow": "rgba(14,165,233,0.20)",
+      "--accent-dim": "rgba(14,165,233,0.12)",
+      "--accent-border": "rgba(14,165,233,0.28)",
+      "--accent-glow": "rgba(14,165,233,0.25)",
 
       "--accent2": "#8b5cf6",
-      "--accent2-dim": "rgba(139,92,246,0.08)",
+      "--accent2-dim": "rgba(139,92,246,0.10)",
       "--accent2-border": "#c4b5fd",
 
-      "--drag-handle": "#e2e8f0",
+      "--drag-handle": "#d1dbe9",
     },
   },
 
-  // ── 9. MIST — soft sage, medium-light ──────────────────────────────────────
+  // ── 9. MIST — soft sage, darker tone ──────────────────────────────────────
   {
     id: "mist",
     label: "Mist",
     swatch: "#84cc16",
     vars: {
-      "--bg-base": "#eff3ea",
-      "--bg-panel": "#e9eee2",
-      "--bg-surface": "#f7faf2",
-      "--bg-elevated": "#ffffff",
-      "--bg-code": "#f0f5e8",
+      "--bg-base": "#e4e9df",
+      "--bg-panel": "#d8e0d2",
+      "--bg-surface": "#eef2e9",
+      "--bg-elevated": "#f6f9f2",
+      "--bg-code": "#e9f0e2",
 
-      "--border": "#dfe6d4",
-      "--border-subtle": "#e9efe0",
+      "--border": "#c8d4b9",
+      "--border-subtle": "#d8e3cc",
 
-      "--text-primary": "#1e2a1e",
+      "--text-primary": "#1f2a1f",
       "--text-secondary": "#4a5a42",
-      "--text-muted": "#8b9a7a",
-      "--text-ghost": "#c2d0b2",
+      "--text-muted": "#6f7f5f",
+      "--text-ghost": "#9bad8a",
 
       "--accent": "#84cc16",
-      "--accent-dim": "rgba(132,204,22,0.10)",
-      "--accent-border": "rgba(132,204,22,0.25)",
-      "--accent-glow": "rgba(132,204,22,0.15)",
+      "--accent-dim": "rgba(132,204,22,0.12)",
+      "--accent-border": "rgba(132,204,22,0.28)",
+      "--accent-glow": "rgba(132,204,22,0.20)",
 
       "--accent2": "#f97316",
-      "--accent2-dim": "rgba(249,115,22,0.08)",
+      "--accent2-dim": "rgba(249,115,22,0.10)",
       "--accent2-border": "#fed7aa",
 
-      "--drag-handle": "#e2e8dc",
+      "--drag-handle": "#d8e0d2",
     },
   },
 
-  // ── 10. ROSE — soft rose, medium-light ─────────────────────────────────────
+  // ── 10. ROSE — soft rose, darker tone ─────────────────────────────────────
   {
     id: "rose",
     label: "Rose",
     swatch: "#f43f5e",
     vars: {
-      "--bg-base": "#fef0f0",
-      "--bg-panel": "#fae8e8",
-      "--bg-surface": "#fff8f8",
-      "--bg-elevated": "#ffffff",
-      "--bg-code": "#fef5f5",
+      "--bg-base": "#f2e4e4",
+      "--bg-panel": "#e8d6d6",
+      "--bg-surface": "#f8ecec",
+      "--bg-elevated": "#fdf4f4",
+      "--bg-code": "#f0e0e0",
 
-      "--border": "#f0dfdf",
-      "--border-subtle": "#f8ecec",
+      "--border": "#e0c6c6",
+      "--border-subtle": "#ecd6d6",
 
       "--text-primary": "#2d1f1f",
       "--text-secondary": "#6e4e4e",
-      "--text-muted": "#b28e8e",
-      "--text-ghost": "#e6cccc",
+      "--text-muted": "#9c7a7a",
+      "--text-ghost": "#d4b8b8",
 
       "--accent": "#f43f5e",
-      "--accent-dim": "rgba(244,63,94,0.08)",
-      "--accent-border": "rgba(244,63,94,0.20)",
-      "--accent-glow": "rgba(244,63,94,0.12)",
+      "--accent-dim": "rgba(244,63,94,0.10)",
+      "--accent-border": "rgba(244,63,94,0.25)",
+      "--accent-glow": "rgba(244,63,94,0.18)",
 
       "--accent2": "#fb923c",
-      "--accent2-dim": "rgba(251,146,60,0.08)",
+      "--accent2-dim": "rgba(251,146,60,0.10)",
       "--accent2-border": "#fed7aa",
 
-      "--drag-handle": "#f0e0e0",
+      "--drag-handle": "#e8d6d6",
     },
   },
 
-  // ── 11. LAVENDER — soft purple, medium-light ────────────────────────────────
+  // ── 11. LAVENDER — soft purple, darker tone ───────────────────────────────
   {
     id: "lavender",
     label: "Lavender",
     swatch: "#a78bfa",
     vars: {
-      "--bg-base": "#f2effc",
-      "--bg-panel": "#ece8f8",
-      "--bg-surface": "#fbfaff",
-      "--bg-elevated": "#ffffff",
-      "--bg-code": "#f6f3ff",
+      "--bg-base": "#e8e4f5",
+      "--bg-panel": "#dcd6f0",
+      "--bg-surface": "#f0ebf9",
+      "--bg-elevated": "#f8f5fe",
+      "--bg-code": "#e9e4f5",
 
-      "--border": "#e4def5",
-      "--border-subtle": "#eeeafb",
+      "--border": "#d1c6e8",
+      "--border-subtle": "#e0d6f0",
 
       "--text-primary": "#26223a",
       "--text-secondary": "#625c82",
-      "--text-muted": "#a69fc2",
-      "--text-ghost": "#ded7f0",
+      "--text-muted": "#8a7eb0",
+      "--text-ghost": "#c4b8e0",
 
       "--accent": "#a78bfa",
-      "--accent-dim": "rgba(167,139,250,0.10)",
-      "--accent-border": "rgba(167,139,250,0.22)",
-      "--accent-glow": "rgba(167,139,250,0.15)",
+      "--accent-dim": "rgba(167,139,250,0.12)",
+      "--accent-border": "rgba(167,139,250,0.28)",
+      "--accent-glow": "rgba(167,139,250,0.20)",
 
       "--accent2": "#2dd4bf",
-      "--accent2-dim": "rgba(45,212,191,0.08)",
+      "--accent2-dim": "rgba(45,212,191,0.10)",
       "--accent2-border": "#ccfbf1",
 
-      "--drag-handle": "#e8e2f8",
+      "--drag-handle": "#dcd6f0",
     },
   },
 
-  // ── 12. COTTON — clean medium, indigo ──────────────────────────────────────
+  // ── 12. COTTON — clean medium, indigo, darker tone ────────────────────────
   {
     id: "cotton",
     label: "Cotton",
     swatch: "#4f46e5",
     vars: {
-      "--bg-base": "#f0f0f8",
-      "--bg-panel": "#eaeaef",
-      "--bg-surface": "#fafaff",
-      "--bg-elevated": "#ffffff",
-      "--bg-code": "#f5f5fc",
+      "--bg-base": "#e6e6f0",
+      "--bg-panel": "#d8d8e6",
+      "--bg-surface": "#f0f0f8",
+      "--bg-elevated": "#f8f8fe",
+      "--bg-code": "#e9e9f3",
 
-      "--border": "#e2e2ea",
-      "--border-subtle": "#ececf2",
+      "--border": "#c8c8e0",
+      "--border-subtle": "#d8d8e8",
 
       "--text-primary": "#252537",
       "--text-secondary": "#5a5a72",
-      "--text-muted": "#9b9bb0",
-      "--text-ghost": "#d0d0e0",
+      "--text-muted": "#7f7f9e",
+      "--text-ghost": "#b8b8d0",
 
       "--accent": "#4f46e5",
-      "--accent-dim": "rgba(79,70,229,0.08)",
-      "--accent-border": "rgba(79,70,229,0.20)",
-      "--accent-glow": "rgba(79,70,229,0.12)",
+      "--accent-dim": "rgba(79,70,229,0.10)",
+      "--accent-border": "rgba(79,70,229,0.25)",
+      "--accent-glow": "rgba(79,70,229,0.18)",
 
       "--accent2": "#ec489a",
-      "--accent2-dim": "rgba(236,72,153,0.06)",
+      "--accent2-dim": "rgba(236,72,153,0.08)",
       "--accent2-border": "#fbcfe8",
 
-      "--drag-handle": "#e2e2ea",
+      "--drag-handle": "#d8d8e6",
     },
   },
 
-  // ── 13. HONEY — warm honey, medium-light ───────────────────────────────────
+  // ── 13. HONEY — warm honey, darker tone ───────────────────────────────────
   {
     id: "honey",
     label: "Honey",
     swatch: "#eab308",
     vars: {
-      "--bg-base": "#fef7e8",
-      "--bg-panel": "#fcf0de",
-      "--bg-surface": "#fffef8",
-      "--bg-elevated": "#ffffff",
-      "--bg-code": "#fef9ec",
+      "--bg-base": "#f0e6d4",
+      "--bg-panel": "#e6d9c2",
+      "--bg-surface": "#f8f0e0",
+      "--bg-elevated": "#fdf8ec",
+      "--bg-code": "#f0e4d0",
 
-      "--border": "#f3e5ce",
-      "--border-subtle": "#faf0e0",
+      "--border": "#e0d0b0",
+      "--border-subtle": "#ecd9be",
 
       "--text-primary": "#3a2a18",
       "--text-secondary": "#7a623a",
-      "--text-muted": "#b89e72",
-      "--text-ghost": "#eedbc0",
+      "--text-muted": "#a07f5f",
+      "--text-ghost": "#d4c4a0",
 
       "--accent": "#eab308",
-      "--accent-dim": "rgba(234,179,8,0.10)",
-      "--accent-border": "rgba(234,179,8,0.22)",
-      "--accent-glow": "rgba(234,179,8,0.18)",
+      "--accent-dim": "rgba(234,179,8,0.12)",
+      "--accent-border": "rgba(234,179,8,0.28)",
+      "--accent-glow": "rgba(234,179,8,0.22)",
 
       "--accent2": "#f97316",
-      "--accent2-dim": "rgba(249,115,22,0.08)",
+      "--accent2-dim": "rgba(249,115,22,0.10)",
       "--accent2-border": "#ffedd5",
 
-      "--drag-handle": "#f0e4d0",
+      "--drag-handle": "#e6d9c2",
     },
   },
 
-  // ── 14. MINT — fresh mint, medium-light ────────────────────────────────────
+  // ── 14. MINT — fresh mint, darker tone ────────────────────────────────────
   {
     id: "mint",
     label: "Mint",
     swatch: "#14b8a6",
     vars: {
-      "--bg-base": "#eef8f5",
-      "--bg-panel": "#e6f2ef",
-      "--bg-surface": "#f8fffd",
-      "--bg-elevated": "#ffffff",
-      "--bg-code": "#f0faf7",
+      "--bg-base": "#e0f0eb",
+      "--bg-panel": "#d0e8e2",
+      "--bg-surface": "#e8f5f1",
+      "--bg-elevated": "#f0faf6",
+      "--bg-code": "#e2f0ea",
 
-      "--border": "#deece8",
-      "--border-subtle": "#eaf5f2",
+      "--border": "#b8e0d4",
+      "--border-subtle": "#c8e8df",
 
       "--text-primary": "#1e4642",
       "--text-secondary": "#5f8a84",
-      "--text-muted": "#9ec0ba",
-      "--text-ghost": "#d5e9e4",
+      "--text-muted": "#7eb8a8",
+      "--text-ghost": "#a8d4c8",
 
       "--accent": "#14b8a6",
-      "--accent-dim": "rgba(20,184,166,0.08)",
-      "--accent-border": "rgba(20,184,166,0.20)",
-      "--accent-glow": "rgba(20,184,166,0.12)",
+      "--accent-dim": "rgba(20,184,166,0.10)",
+      "--accent-border": "rgba(20,184,166,0.25)",
+      "--accent-glow": "rgba(20,184,166,0.18)",
 
       "--accent2": "#8b5cf6",
-      "--accent2-dim": "rgba(139,92,246,0.06)",
+      "--accent2-dim": "rgba(139,92,246,0.08)",
       "--accent2-border": "#ede9fe",
 
-      "--drag-handle": "#e2ece8",
+      "--drag-handle": "#d0e8e2",
     },
   },
 
-  // ── 15. PEACH — soft peach, medium-light ───────────────────────────────────
+  // ── 15. PEACH — soft peach, darker tone ───────────────────────────────────
   {
     id: "peach",
     label: "Peach",
     swatch: "#f97316",
     vars: {
-      "--bg-base": "#fef2e8",
-      "--bg-panel": "#fceae0",
-      "--bg-surface": "#fffbf8",
-      "--bg-elevated": "#ffffff",
-      "--bg-code": "#fef5ec",
+      "--bg-base": "#f0e4d8",
+      "--bg-panel": "#e6d4c2",
+      "--bg-surface": "#f8ede0",
+      "--bg-elevated": "#fdf6ec",
+      "--bg-code": "#f0e0d0",
 
-      "--border": "#f5e2d4",
-      "--border-subtle": "#fceee4",
+      "--border": "#e0c8a8",
+      "--border-subtle": "#ecd4b8",
 
       "--text-primary": "#3b2a1f",
       "--text-secondary": "#8b6b50",
-      "--text-muted": "#c6a282",
-      "--text-ghost": "#f2e0d0",
+      "--text-muted": "#b38a6f",
+      "--text-ghost": "#d8c8b0",
 
       "--accent": "#f97316",
-      "--accent-dim": "rgba(249,115,22,0.08)",
-      "--accent-border": "rgba(249,115,22,0.20)",
-      "--accent-glow": "rgba(249,115,22,0.12)",
+      "--accent-dim": "rgba(249,115,22,0.10)",
+      "--accent-border": "rgba(249,115,22,0.25)",
+      "--accent-glow": "rgba(249,115,22,0.18)",
 
       "--accent2": "#06b6d4",
-      "--accent2-dim": "rgba(6,182,212,0.08)",
+      "--accent2-dim": "rgba(6,182,212,0.10)",
       "--accent2-border": "#cffafe",
 
-      "--drag-handle": "#f0e0d4",
+      "--drag-handle": "#e6d4c2",
     },
   },
 
-  // ── 16. FROST — cool gray, medium-light ────────────────────────────────────
+  // ── 16. FROST — cool gray, darker tone ────────────────────────────────────
   {
     id: "frost",
     label: "Frost",
     swatch: "#06b6d4",
     vars: {
-      "--bg-base": "#edf2f7",
-      "--bg-panel": "#e6ecf2",
-      "--bg-surface": "#f8fbfe",
-      "--bg-elevated": "#ffffff",
-      "--bg-code": "#f0f5fa",
+      "--bg-base": "#e4ecf7",
+      "--bg-panel": "#d6e2f0",
+      "--bg-surface": "#ecf2f9",
+      "--bg-elevated": "#f4f9fe",
+      "--bg-code": "#e9f0f8",
 
-      "--border": "#dfe6ef",
-      "--border-subtle": "#e9f0f5",
+      "--border": "#c8d8ec",
+      "--border-subtle": "#d6e4f2",
 
       "--text-primary": "#1e2e3e",
       "--text-secondary": "#5b6e7e",
-      "--text-muted": "#9aaebc",
-      "--text-ghost": "#cedae4",
+      "--text-muted": "#7e9ab8",
+      "--text-ghost": "#b8cce4",
 
       "--accent": "#06b6d4",
-      "--accent-dim": "rgba(6,182,212,0.08)",
-      "--accent-border": "rgba(6,182,212,0.18)",
-      "--accent-glow": "rgba(6,182,212,0.12)",
+      "--accent-dim": "rgba(6,182,212,0.10)",
+      "--accent-border": "rgba(6,182,212,0.22)",
+      "--accent-glow": "rgba(6,182,212,0.18)",
 
       "--accent2": "#a855f7",
-      "--accent2-dim": "rgba(168,85,247,0.06)",
+      "--accent2-dim": "rgba(168,85,247,0.08)",
       "--accent2-border": "#ede9fe",
 
-      "--drag-handle": "#e2e8f0",
+      "--drag-handle": "#d6e2f0",
     },
   },
 
-  // ── 17. STONE — warm neutral, medium-light ─────────────────────────────────
+  // ── 17. STONE — warm neutral, darker tone ─────────────────────────────────
   {
     id: "stone",
     label: "Stone",
     swatch: "#78716c",
     vars: {
-      "--bg-base": "#f5f2ef",
-      "--bg-panel": "#eeebe8",
-      "--bg-surface": "#fefcf9",
-      "--bg-elevated": "#ffffff",
-      "--bg-code": "#f8f5f2",
+      "--bg-base": "#ebe6e0",
+      "--bg-panel": "#e2dad2",
+      "--bg-surface": "#f2ede6",
+      "--bg-elevated": "#f8f5f0",
+      "--bg-code": "#f0e9e0",
 
-      "--border": "#e8e2dc",
-      "--border-subtle": "#f0ece8",
+      "--border": "#d9d0c4",
+      "--border-subtle": "#e4dbd0",
 
       "--text-primary": "#2b2520",
       "--text-secondary": "#6b625a",
-      "--text-muted": "#b0a69c",
-      "--text-ghost": "#e2dad2",
+      "--text-muted": "#9c8f7f",
+      "--text-ghost": "#d1c6b8",
 
       "--accent": "#78716c",
-      "--accent-dim": "rgba(120,113,108,0.10)",
-      "--accent-border": "rgba(120,113,108,0.20)",
-      "--accent-glow": "rgba(120,113,108,0.12)",
+      "--accent-dim": "rgba(120,113,108,0.12)",
+      "--accent-border": "rgba(120,113,108,0.25)",
+      "--accent-glow": "rgba(120,113,108,0.15)",
 
       "--accent2": "#d97706",
-      "--accent2-dim": "rgba(217,119,6,0.08)",
+      "--accent2-dim": "rgba(217,119,6,0.10)",
       "--accent2-border": "#fed7aa",
 
-      "--drag-handle": "#e8e2dc",
+      "--drag-handle": "#e2dad2",
     },
   },
 
-  // ── 18. OCEAN BREEZE — light blue, medium-light ────────────────────────────
+  // ── 18. OCEAN BREEZE — light blue, darker tone ────────────────────────────
   {
     id: "ocean-breeze",
     label: "Ocean Breeze",
     swatch: "#3b82f6",
     vars: {
-      "--bg-base": "#eef3fc",
-      "--bg-panel": "#e8eef8",
-      "--bg-surface": "#fafdff",
-      "--bg-elevated": "#ffffff",
-      "--bg-code": "#f0f6fe",
+      "--bg-base": "#e4ebf8",
+      "--bg-panel": "#d6e2f2",
+      "--bg-surface": "#ecf2fb",
+      "--bg-elevated": "#f4f9fe",
+      "--bg-code": "#e9f0f9",
 
-      "--border": "#dfe8f2",
-      "--border-subtle": "#eaf1f8",
+      "--border": "#c8d8f0",
+      "--border-subtle": "#d6e4f5",
 
       "--text-primary": "#1e2a3a",
       "--text-secondary": "#5a6e82",
-      "--text-muted": "#9aaebf",
-      "--text-ghost": "#cfdeec",
+      "--text-muted": "#7e96b8",
+      "--text-ghost": "#b8cce8",
 
       "--accent": "#3b82f6",
-      "--accent-dim": "rgba(59,130,246,0.08)",
-      "--accent-border": "rgba(59,130,246,0.20)",
-      "--accent-glow": "rgba(59,130,246,0.12)",
+      "--accent-dim": "rgba(59,130,246,0.10)",
+      "--accent-border": "rgba(59,130,246,0.25)",
+      "--accent-glow": "rgba(59,130,246,0.20)",
 
       "--accent2": "#f97316",
-      "--accent2-dim": "rgba(249,115,22,0.08)",
+      "--accent2-dim": "rgba(249,115,22,0.10)",
       "--accent2-border": "#fed7aa",
 
-      "--drag-handle": "#e2eaf2",
+      "--drag-handle": "#d6e2f2",
     },
   },
 ];
