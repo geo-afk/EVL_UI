@@ -8,7 +8,7 @@ import { AIPanel } from "../components/panels/AIPanel";
 import { ParseTreePanel } from "../components/panels/ParseTreePanel";
 import { SplitLayout } from "../components/layout/SplitLayout";
 import { StackedPanes } from "../components/layout/StackedPanes";
-import { AnalysisResponse, EVAL_SAMPLE } from "../model/models";
+import { AnalysisResponse } from "../model/models";
 import { fetchAIInsights, fetchRunCode } from "../api";
 import { setError } from "../eval/lsp/setup";
 import * as Monaco from "monaco-editor";
@@ -173,7 +173,7 @@ export const EditorPage = () => {
 
   const [code, setCode] = useState<string>(() => {
     if (incomingCode) return incomingCode;
-    return readSession<string>(STORAGE_KEY_CODE) ?? EVAL_SAMPLE.defaultCode;
+    return readSession<string>(STORAGE_KEY_CODE) ?? "";
   });
 
   // Rehydrate panels from sessionStorage so output survives page navigation
