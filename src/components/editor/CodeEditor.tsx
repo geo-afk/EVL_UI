@@ -32,6 +32,7 @@ import {
   type EditorTheme,
 } from "../../model/editorThemes";
 import { ThemeDropdown } from "./EditorTheme";
+import { useAutocomplete } from "./useAutocomplete";
 import { fetchAIComplete } from "../../api";
 
 // How long the user must stop typing before an autocomplete request fires (ms)
@@ -384,6 +385,8 @@ export const CodeEditor = ({
   // Latest pending inline completion so the provider can read it synchronously
   const pendingCompletion = useRef<string>("");
 
+  const { triggerAutocomplete, getPendingCompletion, clearPendingCompletion } = useAutocomplete(editorRef);
+
   // ─── Toast helper ──────────────────────────────────────────────────────────
   const showToast = useCallback(
     (message: string, kind: "success" | "error") => {
@@ -532,50 +535,22 @@ export const CodeEditor = ({
 
       if (autocompleteTimer.current) clearTimeout(autocompleteTimer.current);
       autocompleteRequestId.current += 1;
-      const requestId = autocompleteRequestId.current;
 
       autocompleteAbortController.current?.abort();
       autocompleteAbortController.current = new AbortController();
       pendingCompletion.current = "";
 
-      autocompleteTimer.current = setTimeout(async () => {
-        const position = editor.getPosition();
-        if (!position) return;
+      const position = editor.getPosition();
+      if (position) {
         const currentModel = editor.getModel();
-        if (!currentModel) return;
-
-        const lineText = currentModel
-          .getLineContent(position.lineNumber)
-          .substring(0, position.column - 1)
-          .trim();
-
-        if (!lineText) return;
-
-        try {
-          const data = await fetchAIComplete(lineText, {
-            signal: autocompleteAbortController.current?.signal,
-          });
-
-          if (requestId !== autocompleteRequestId.current) return;
-
-          if (data?.completion) {
-            pendingCompletion.current = data.completion;
-
-            // Only trigger inline suggestions if editor still has focus and the request is current.
-            if (requestId === autocompleteRequestId.current) {
-              try {
-                editor.trigger("ai", "editor.action.inlineSuggest.trigger", {});
-              } catch {
-                // Ignore editor trigger exceptions; it should never block typing.
-              }
-            }
-          }
-        } catch (error) {
-          if ((error as Error)?.name === "AbortError") return;
-          pendingCompletion.current = "";
-          // Silently ignore autocomplete errors — non-critical
+        if (currentModel) {
+          const lineText = currentModel
+            .getLineContent(position.lineNumber)
+            .substring(0, position.column - 1)
+            .trim();
+          triggerAutocomplete(lineText);
         }
-      }, AUTOCOMPLETE_DEBOUNCE_MS);
+      }
     });
 
     // ── Inline completions provider ───────────────────────────────────────
@@ -584,7 +559,7 @@ export const CodeEditor = ({
         _model: Monaco.editor.ITextModel,
         position: Monaco.Position,
       ) => {
-        const completion = pendingCompletion.current;
+        const completion = getPendingCompletion();
         if (!completion) return { items: [] };
 
         return {
@@ -602,7 +577,7 @@ export const CodeEditor = ({
         };
       },
       freeInlineCompletions: () => {
-        pendingCompletion.current = "";
+        clearPendingCompletion();
       },
       disposeInlineCompletions: () => {},
     });
