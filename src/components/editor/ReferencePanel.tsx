@@ -46,7 +46,6 @@ const SECTIONS: Section[] = [
       { label: "Comparison",       color: "#a78bfa", tokens: ["==", "!=", "<", ">", "<=", ">="] },
       { label: "Logical",          color: "#fb923c", tokens: ["&&", "||", "!"] },
       { label: "Compound assign",  color: "#38bdf8", tokens: ["+=", "-=", "*=", "/="] },
-      { label: "Increment",        color: "#4ade80", tokens: ["++", "--"] },
     ],
   },
   {
@@ -58,7 +57,7 @@ const SECTIONS: Section[] = [
       { label: "if",       code: "if (x > 0) { }"                      },
       { label: "if/else",  code: "if (x > 0) { } else { }"             },
       { label: "else if",  code: "else if (x == 0) { }"                },
-      { label: "while",    code: "while (x < 10) { x++ }"              },
+      { label: "while",    code: "while (x < 10) { x+=1 }"              },
       { label: "break",    code: "break"                                },
       { label: "continue", code: "continue"                             },
     ],
@@ -189,7 +188,7 @@ function SnippetRow({
   );
 }
 
-function FunctionRow({ fn, accent }: { fn: FnEntry; accent: string }) {
+function FunctionRow({ fn, accent, copied, onCopy }: { fn: FnEntry; accent: string; copied: boolean; onCopy: () => void }) {
   return (
     <Flex
       direction="column" gap="4px"
@@ -197,6 +196,12 @@ function FunctionRow({ fn, accent }: { fn: FnEntry; accent: string }) {
       borderRadius="6px"
       bg="var(--bg-base)"
       border="1px solid var(--border)"
+      cursor="pointer"
+      role="button"
+      title="Click to copy"
+      onClick={onCopy}
+      transition="border-color 0.15s, background 0.15s"
+      _hover={{ borderColor: `${accent}55`, bg: "var(--bg-surface)" }}
     >
       <Flex align="center" justify="space-between" gap="8px">
         <Text
@@ -212,8 +217,14 @@ function FunctionRow({ fn, accent }: { fn: FnEntry; accent: string }) {
           px="6px" py="1px" flexShrink={0}
           bg={`${accent}14`} border={`1px solid ${accent}30`} borderRadius="4px"
         >
-          <Text fontSize="9px" color={accent} fontFamily="monospace" fontWeight="700">
-            {fn.returns}
+          <Text 
+            fontSize="9px" 
+            color={copied ? "#4ade80" : accent} 
+            fontFamily="monospace" 
+            fontWeight="700"
+            transition="color 0.15s"
+          >
+            {copied ? "copied!" : fn.returns}
           </Text>
         </Box>
       </Flex>
@@ -224,7 +235,7 @@ function FunctionRow({ fn, accent }: { fn: FnEntry; accent: string }) {
   );
 }
 
-function ConstantRow({ c, accent }: { c: ConstEntry; accent: string }) {
+function ConstantRow({ c, accent, copied, onCopy }: { c: ConstEntry; accent: string; copied: boolean; onCopy: () => void }) {
   return (
     <Flex
       align="center" gap="10px"
@@ -232,6 +243,12 @@ function ConstantRow({ c, accent }: { c: ConstEntry; accent: string }) {
       borderRadius="6px"
       bg="var(--bg-base)"
       border="1px solid var(--border)"
+      cursor="pointer"
+      role="button"
+      title="Click to copy"
+      onClick={onCopy}
+      transition="border-color 0.15s, background 0.15s"
+      _hover={{ borderColor: `${accent}55`, bg: "var(--bg-surface)" }}
     >
       <Text
         fontSize="12px" fontFamily="'JetBrains Mono', monospace"
@@ -244,8 +261,13 @@ function ConstantRow({ c, accent }: { c: ConstEntry; accent: string }) {
         px="6px" py="1px" flexShrink={0}
         bg={`${accent}14`} border={`1px solid ${accent}30`} borderRadius="4px"
       >
-        <Text fontSize="9.5px" color={accent} fontFamily="monospace">
-          {c.value}
+        <Text 
+          fontSize="9.5px" 
+          color={copied ? "#4ade80" : accent} 
+          fontFamily="monospace"
+          transition="color 0.15s"
+        >
+          {copied ? "copied!" : c.value}
         </Text>
       </Box>
       <Text fontSize="10.5px" color="var(--text-muted)" flex={1}
@@ -256,7 +278,7 @@ function ConstantRow({ c, accent }: { c: ConstEntry; accent: string }) {
   );
 }
 
-function OperatorGroups({ groups }: { groups: TokenGroup[] }) {
+function OperatorGroups({ groups, copied, onCopy }: { groups: TokenGroup[]; copied: string | null; onCopy: (token: string) => void }) {
   return (
     <Flex direction="column" gap="10px"
       px="12px" py="10px"
@@ -278,10 +300,24 @@ function OperatorGroups({ groups }: { groups: TokenGroup[] }) {
                 bg={`${g.color}0e`}
                 border={`1px solid ${g.color}33`}
                 borderRadius="5px"
+                cursor="pointer"
+                role="button"
+                title="Click to copy"
+                onClick={() => onCopy(tok)}
+                transition="border-color 0.15s, background 0.15s, color 0.15s"
+                _hover={{
+                  borderColor: `${g.color}66`,
+                  bg: `${g.color}15`,
+                }}
               >
-                <Text fontSize="13px" fontFamily="'JetBrains Mono', monospace"
-                  color={g.color} fontWeight="700">
-                  {tok}
+                <Text 
+                  fontSize="13px" 
+                  fontFamily="'JetBrains Mono', monospace"
+                  color={copied === tok ? "#4ade80" : g.color} 
+                  fontWeight="700"
+                  transition="color 0.15s"
+                >
+                  {copied === tok ? "✓" : tok}
                 </Text>
               </Box>
             ))}
@@ -345,13 +381,29 @@ function RefSection({ section, defaultOpen = true }: { section: Section; default
             />
           ))}
           {section.kind === "functions" && section.functions?.map((f) => (
-            <FunctionRow key={f.sig} fn={f} accent={section.accentColor} />
+            <FunctionRow 
+              key={f.sig} 
+              fn={f} 
+              accent={section.accentColor}
+              copied={copied === f.sig}
+              onCopy={() => copy(f.sig, f.sig)}
+            />
           ))}
           {section.kind === "constants" && section.constants?.map((c) => (
-            <ConstantRow key={c.name} c={c} accent={section.accentColor} />
+            <ConstantRow 
+              key={c.name} 
+              c={c} 
+              accent={section.accentColor}
+              copied={copied === c.name}
+              onCopy={() => copy(c.name, c.name)}
+            />
           ))}
           {section.kind === "operators" && section.groups && (
-            <OperatorGroups groups={section.groups} />
+            <OperatorGroups 
+              groups={section.groups}
+              copied={copied}
+              onCopy={(token: string) => copy(token, token)}
+            />
           )}
         </Flex>
       )}
