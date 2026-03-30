@@ -74,7 +74,7 @@ function buildRawTree(code: string): ParseResult {
       if (pt instanceof ParserRuleContext) {
         let ruleName = "rule";
         try {
-          const ruleIdx = (pt as any).ruleIndex;
+          const ruleIdx = pt.ruleIndex;
           if (typeof ruleIdx === "number" && parser.ruleNames[ruleIdx]) {
             ruleName = parser.ruleNames[ruleIdx];
           }
