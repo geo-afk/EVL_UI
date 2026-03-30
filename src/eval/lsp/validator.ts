@@ -838,14 +838,12 @@ function performFullValidation(
       tryStartDepth = braceDepth;
     }
 
-    if (/^}?\s*catch\s*\(/.test(t)) {
-      // Handled
-    }
-
     const isBraceOnly = /^[{}\s]+$/.test(t);
     let isControlFlow = false;
 
-    if (/^(if|else\s+if|while|for)\s*\(/.test(t)) {
+    if (/^try\s*\{?$/.test(t)) {
+      isControlFlow = true;
+    } else if (/^(if|else\s+if|while|for)\s*\(/.test(t)) {
       isControlFlow = true;
       const parenOpen = t.indexOf("(");
       if (parenOpen !== -1) {
@@ -872,6 +870,8 @@ function performFullValidation(
       /^else\b/.test(t) || // else { … }
       /^}\s*else\b/.test(t) // } else { … }  /  } else if (...) {
     ) {
+      isControlFlow = true;
+    } else if (/^}?\s*catch\s*\(\s*[a-zA-Z_]\w*\s*\)\s*\{?$/.test(t)) {
       isControlFlow = true;
     } else if (/^return\b/.test(t)) {
       isControlFlow = true;
