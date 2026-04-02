@@ -7,7 +7,7 @@ import {
   type OnValidate,
 } from "@monaco-editor/react";
 import * as Monaco from "monaco-editor";
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import {
   Play,
   Cpu,
@@ -33,10 +33,6 @@ import {
 } from "../../model/editorThemes";
 import { ThemeDropdown } from "./EditorTheme";
 import { useAutocomplete } from "./useAutocomplete";
-import { fetchAIComplete } from "../../api";
-
-// How long the user must stop typing before an autocomplete request fires (ms)
-const AUTOCOMPLETE_DEBOUNCE_MS = 600;
 
 interface CodeEditorProps {
   code: string;
@@ -370,6 +366,7 @@ export const CodeEditor = ({
   const [showRef, setShowRef] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isApplyingExternalCode = useRef(false);
   const [activeTheme, setActiveTheme] = useState<EditorTheme>(() => {
     const savedId = localStorage.getItem("editorThemeId");
     return (
@@ -378,14 +375,34 @@ export const CodeEditor = ({
     );
   });
 
-  // Debounce timer ref for autocomplete
-  const autocompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const autocompleteRequestId = useRef(0);
-  const autocompleteAbortController = useRef<AbortController | null>(null);
-  // Latest pending inline completion so the provider can read it synchronously
-  const pendingCompletion = useRef<string>("");
-
   const { triggerAutocomplete, getPendingCompletion, clearPendingCompletion } = useAutocomplete(editorRef);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    const model = editor?.getModel();
+    if (!editor || !model) return;
+
+    const currentValue = model.getValue();
+    if (currentValue === code) return;
+
+    const selection = editor.getSelection();
+    const scrollTop = editor.getScrollTop();
+    const scrollLeft = editor.getScrollLeft();
+
+    isApplyingExternalCode.current = true;
+    editor.executeEdits("external-code-sync", [
+      {
+        range: model.getFullModelRange(),
+        text: code,
+        forceMoveMarkers: true,
+      },
+    ]);
+
+    if (selection) editor.setSelection(selection);
+    editor.setScrollTop(scrollTop);
+    editor.setScrollLeft(scrollLeft);
+    isApplyingExternalCode.current = false;
+  }, [code]);
 
   // ─── Toast helper ──────────────────────────────────────────────────────────
   const showToast = useCallback(
@@ -478,6 +495,7 @@ export const CodeEditor = ({
   };
 
   const handleEditorChange: OnChange = (value) => {
+    if (isApplyingExternalCode.current) return;
     onCodeChange(value ?? "");
   };
 
@@ -533,13 +551,6 @@ export const CodeEditor = ({
         setErrors(errCount + warnCount);
       }
 
-      if (autocompleteTimer.current) clearTimeout(autocompleteTimer.current);
-      autocompleteRequestId.current += 1;
-
-      autocompleteAbortController.current?.abort();
-      autocompleteAbortController.current = new AbortController();
-      pendingCompletion.current = "";
-
       const position = editor.getPosition();
       if (position) {
         const currentModel = editor.getModel();
@@ -555,27 +566,76 @@ export const CodeEditor = ({
 
     // ── Inline completions provider ───────────────────────────────────────
     monaco.languages.registerInlineCompletionsProvider(EVAL_LANGUAGE_ID, {
-      provideInlineCompletions: (
-        _model: Monaco.editor.ITextModel,
-        position: Monaco.Position,
-      ) => {
-        const completion = getPendingCompletion();
-        if (!completion) return { items: [] };
+      // ─── CodeEditor.tsx — two targeted changes ───────────────────────────────────
+//
+// 1.  In the Editor <options> prop, increase quickSuggestionsDelay so
+//     Monaco's *popup* widget doesn't also fire on every keystroke.
+//     (Inline ghost text timing is controlled by useAutocomplete's debounce,
+//      not by this value, so they don't conflict.)
+//
+// BEFORE:
+//   quickSuggestionsDelay: 0,
+//
+// AFTER:
+//   quickSuggestionsDelay: 300,   // match the debounce in useAutocomplete
 
-        return {
-          items: [
-            {
-              insertText: completion,
-              range: {
-                startLineNumber: position.lineNumber,
-                startColumn: position.column,
-                endLineNumber: position.lineNumber,
-                endColumn: position.column,
-              },
-            },
-          ],
-        };
-      },
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2.  In provideInlineCompletions, pass the current line text to
+//     getPendingCompletion so the read-time stale-check fires correctly.
+//
+// BEFORE:
+//   provideInlineCompletions: (
+//     _model: Monaco.editor.ITextModel,
+//     position: Monaco.Position,
+//   ) => {
+//     const completion = getPendingCompletion();
+//     if (!completion) return { items: [] };
+//
+//     return {
+//       items: [
+//         {
+//           insertText: completion,
+//           range: {
+//             startLineNumber: position.lineNumber,
+//             startColumn: position.column,
+//             endLineNumber: position.lineNumber,
+//             endColumn: position.column,
+//           },
+//         },
+//       ],
+//     };
+//   },
+//
+// AFTER:
+   provideInlineCompletions: (
+     model: Monaco.editor.ITextModel,
+     position: Monaco.Position,
+   ) => {
+     // Pass the current line-up-to-cursor so getPendingCompletion can
+     // reject a result that was fetched for a different cursor position.
+     const currentLineText = model
+       .getLineContent(position.lineNumber)
+       .substring(0, position.column - 1)
+       .trim();
+
+     const completion = getPendingCompletion(currentLineText);
+     if (!completion) return { items: [] };
+
+     return {
+       items: [
+         {
+           insertText: completion,
+           range: {
+             startLineNumber: position.lineNumber,
+             startColumn: position.column,
+             endLineNumber: position.lineNumber,
+             endColumn: position.column,
+           },
+         },
+       ],
+     };
+   },
       freeInlineCompletions: () => {
         clearPendingCompletion();
       },
@@ -792,7 +852,7 @@ export const CodeEditor = ({
           height="100%"
           theme={activeTheme.id}
           language={EVAL_LANGUAGE_ID}
-          value={code}
+          defaultValue={code}
           onChange={handleEditorChange}
           onMount={handleEditorDidMount}
           beforeMount={handleEditorWillMount}
@@ -821,8 +881,21 @@ export const CodeEditor = ({
               verticalScrollbarSize: 6,
               horizontalScrollbarSize: 6,
             },
+            // ── Auto-completion while typing ────────────────────────────────
+            // Trigger the suggestion widget on every keystroke (no Ctrl+Space needed).
+            quickSuggestions: {
+              other: true,     // triggers in normal code positions
+              comments: false, // stay quiet inside comments
+              strings: false,  // stay quiet inside string literals
+            },
+            quickSuggestionsDelay: 0,         // show instantly (ms after keystroke)
+            suggestOnTriggerCharacters: true,  // also fire on '(', ',', etc.
+            wordBasedSuggestions: "off",       // suppress generic word-list noise
+            // ───────────────────────────────────────────────────────────────
             suggest: {
               showIcons: true,
+              // Show the detail/documentation panel beside the suggestion list.
+              showInlineDetails: true,
             },
             inlineSuggest: {
               enabled: true,
