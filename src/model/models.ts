@@ -1,5 +1,22 @@
 export const EVAL_LANGUAGE_ID = "evl";
 
+// ── Shared result types (imported by EditorPage, OutputPanel, AIPanel) ─────────
+// Centralizing these here eliminates the duplicate local definitions that lived
+// in both EditorPage and each panel component.
+
+export interface CodeRunResult {
+  logs: string[];
+  error?: string;
+  returnValue?: string;
+}
+
+export interface AIResult {
+  content?: string;
+  error?: string;
+}
+
+// ── Diagnostics ───────────────────────────────────────────────────────────────
+// Legacy interface kept for any LSP / validator callers that still reference it.
 export interface Diagnostics {
   severity: string;
   line: number;
@@ -8,7 +25,21 @@ export interface Diagnostics {
   message: string;
 }
 
-export const FUNCTION_SIGNATURES = {
+// ── Function signatures ────────────────────────────────────────────────────────
+// Previously the FUNCTION_SIGNATURES object used implicit inline types.
+// A named interface makes it easy to add new entries without silently diverging.
+export interface FunctionSignatureParam {
+  label: string;
+  documentation: string;
+}
+
+export interface FunctionSignature {
+  label: string;
+  documentation: string;
+  parameters: FunctionSignatureParam[];
+}
+
+export const FUNCTION_SIGNATURES: Record<string, FunctionSignature> = {
   pow: {
     label: "pow(base: number, exponent: number) → float",
     documentation: "Raises base to the power of exponent.",
@@ -38,7 +69,6 @@ export interface Language {
   monacoLang: string;
   defaultCode: string;
 }
-
 
 // ── Scope ─────────────────────────────────────────────────────────────────────
 export interface ScopeEntry {
