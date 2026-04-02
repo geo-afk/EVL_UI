@@ -8,8 +8,19 @@ function extractVarName(message: string): string | null {
 }
 
 function extractIdentifierName(message: string): string | null {
-  const match = message.match(/identifier '(\w+)'/);
-  return match ? match[1] : null;
+  const identifierMatch = message.match(/identifier '(\w+)'/);
+
+  if (identifierMatch != null) {
+    return identifierMatch[1];
+  }
+
+  const variableMatch = message.match(/variable '(\w+)'/);
+
+  if (variableMatch != null) {
+    return variableMatch[1];
+  }
+
+  return null;
 }
 
 function extractFunctionName(message: string): string | null {
@@ -107,9 +118,9 @@ export function codeActions(EVAL_LANGUAGE_ID: string, monacoInstance: typeof mon
           }
         }
 
-        // ── Fix: float variable initialised with integer literal ──────────────
+        // ── Fix: float variable initialized with integer literal ──────────────
         //    e.g.  float x = 34  →  float x = 34.0
-        if (msg.includes("must be initialised with a float literal")) {
+        if (msg.includes("must be initialized with a float literal")) {
           const fix = extractFloatLiteralFix(msg);
           if (fix) {
             // Replace the bare integer at the end of the line
@@ -284,7 +295,8 @@ export function codeActions(EVAL_LANGUAGE_ID: string, monacoInstance: typeof mon
         }
 
         // ── Fix: undeclared identifier → insert declaration above ─────────────
-        if (msg.includes("undeclared identifier")) {
+
+        if (msg.includes("undeclared identifier") || msg.includes("undeclared variable")) {
           const identName = extractIdentifierName(msg);
           if (identName) {
             ["int", "float"].forEach(type => {
