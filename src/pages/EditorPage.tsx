@@ -88,9 +88,7 @@ function toRunResult(analysis: AnalysisResponse): CodeRunResult {
   return { logs };
 }
 
-// Writes a trimmed debug snapshot to sessionStorage for DevTools inspection.
-// Excludes steps[].scope (every live variable at every execution step) which
-// is the primary source of quota-busting payload size.
+
 function writeDebugSnapshot(analysis: AnalysisResponse, code: string) {
   writeSession("eval_last_debug", {
     code,
@@ -98,8 +96,7 @@ function writeDebugSnapshot(analysis: AnalysisResponse, code: string) {
     has_errors: analysis.has_errors,
     errors:     analysis.errors,
     warnings:   analysis.warnings,
-    step_count: analysis.steps.length,
-    // Steps are omitted — inspect the network response for full detail.
+    steps:      analysis.steps, // Include steps for debugger functionality
   });
 }
 
@@ -222,15 +219,8 @@ export const EditorPage = () => {
     return () => { if (storageTimerRef.current) clearTimeout(storageTimerRef.current); };
   }, [code]);
 
-  // On mount: clear incoming code sources from URL/history, and migrate any
-  // old full-size debug snapshot left by a previous session to the new trimmed
-  // format to reclaim storage space.
+  // On mount: clear incoming code sources from URL/history
   useEffect(() => {
-    // Evict any full-size snapshot written by an older version of this code.
-    // writeSession for eval_last_debug now only writes the trimmed form, so
-    // old entries just waste space until cleared here.
-    sessionStorage.removeItem("eval_last_debug");
-
     if (hashCode) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     } else if (locationState?.code) {
@@ -257,7 +247,7 @@ export const EditorPage = () => {
     setActiveMode(null);
     setDiagErrors([]);
     setDiagWarnings([]);
-    clearSession(SK.RUN, SK.AI, SK.MODE);
+    clearSession(SK.RUN, SK.AI, SK.MODE, "eval_last_debug");
     setLeftTab("results");
 
     try {

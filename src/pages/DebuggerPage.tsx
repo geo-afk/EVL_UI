@@ -15,15 +15,19 @@ import {
   Activity,
   Gauge,
 } from "lucide-react";
-import { AnalysisResponse, StepModel, ScopeEntry } from "../model/models";
+import { StepModel, ScopeEntry, DiagnosticModel } from "../model/models";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SESSION SHAPE
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface DebugSession {
-  analysis: AnalysisResponse;
   code: string;
+  output: string[];
+  has_errors: boolean;
+  errors: DiagnosticModel[];
+  warnings: DiagnosticModel[];
+  steps: StepModel[];
 }
 
 function readDebugSession(): DebugSession | null {
@@ -854,7 +858,7 @@ function NavBar({
 
 export const DebuggerPage = () => {
   const navigate = useNavigate();
-  const session  = readDebugSession();
+  const session = readDebugSession();
 
   const [activeIdx,    setActiveIdx]    = useState(0);
   const [outputTab,    setOutputTab]    = useState<"step" | "accumulated">("step");
@@ -863,17 +867,17 @@ export const DebuggerPage = () => {
   const [speed,        setSpeed]        = useState<PlaySpeed>("normal");
 
   const steps = useMemo(
-    () => session?.analysis.steps ?? [],
-    [session?.analysis.steps],
+    () => session?.steps ?? [],
+    [session?.steps],
   );
   const code = session?.code ?? "";
   const errors = useMemo(
-    () => session?.analysis.errors ?? [],
-    [session?.analysis.errors],
+    () => session?.errors ?? [],
+    [session?.errors],
   );
   const warnings = useMemo(
-    () => session?.analysis.warnings ?? [],
-    [session?.analysis.warnings],
+    () => session?.warnings ?? [],
+    [session?.warnings],
   );
 
   // Set of line numbers that carry errors — used by source viewer + timeline
